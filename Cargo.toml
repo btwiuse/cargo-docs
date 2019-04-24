@@ -1,0 +1,27 @@
+[package]
+name = "cargo-serve-doc"
+version = "0.1.0"
+authors = ["Daniel Wagner-Hall <dawagner@gmail.com>"]
+edition = "2018"
+description = "A cargo plugin for serving a unified tree of crate-local and std documentation (as well as the Rust book)."
+repository = "https://github.com/illicitonion/cargo-serve-doc"
+readme = "README.md"
+categories = ["development-tools::cargo-plugins"]
+license = "BSD-3-Clause"
+
+[dependencies]
+bytes = "0.4"
+cargo = "0.35"
+clap = "2.32"
+futures = "0.1"
+http = "0.1.16"
+replacing-buf-stream = { path = "replacing-buf-stream" }
+tokio = "0.1.15"
+tower-web = "0.3.7"
+
+[workspace]
+members = ["replacing-buf-stream"]
+
+[badges]
+travis-ci = { repository = "illicitonion/cargo-serve-doc", branch = "master" }
+maintenance = { status = "experimental" }
