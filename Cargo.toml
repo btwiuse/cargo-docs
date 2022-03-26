@@ -1,31 +1,31 @@
 [package]
 name = "cargo-docs"
-version = "0.1.0"
+version = "0.1.1"
 authors = [
   "Daniel Wagner-Hall <dawagner@gmail.com>",
   "Btwiuse Arch <btwiuse@gmail.com>",
 ]
 edition = "2021"
 description = "A cargo plugin for serving a unified tree of crate-local and std documentation (as well as the Rust book)."
-repository = "https://github.com/illicitonion/cargo-serve-doc"
+repository = "https://github.com/btwiuse/cargo-docs"
 readme = "README.md"
 categories = ["development-tools::cargo-plugins"]
 license = "MIT"
 
 [dependencies]
 # bytes = "1.1"
-cargo = "0.60"
-clap = "2.34"
 # futures = "0.3"
-http = "0.2"
 # replacing-buf-stream = { path = "replacing-buf-stream" }
-tokio = { version = "1", features = ["full"] }
 # tower-web = "0.3.7"
 # poem = { version = "1", features = ["static-files"] }
 anyhow = "1"
+cargo = "0.60"
+clap = "2.34"
+futures-util = "0.3"
+http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
 hyper-staticfile = "0.8"
-futures-util = "0.3"
+tokio = { version = "1", features = ["full"] }
 
 # [workspace]
 # members = ["replacing-buf-stream"]
