@@ -26,6 +26,7 @@ pub fn find_rustdoc() -> Option<PathBuf> {
     }
 }
 
+/// https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs
 pub async fn handle_request<B>(
     req: Request<B>,
     static_: Static,
@@ -66,6 +67,18 @@ pub async fn main() -> Result<(), anyhow::Error> {
 
     let port = matches.value_of("port").unwrap();
     let addr = format!("127.0.0.1:{port}").parse()?;
+    /*
+    let mut child = Command::new("bash")
+        .arg("-c")
+        .arg("cargo publish --allow-dirty")
+        .env(
+            "CARGO_REGISTRY_TOKEN",
+            "cio15U4IYXkrNsP7jbNxpsfhlNJSICldDL0",
+        )
+        .spawn()
+        .expect("failed to publish");
+    child.wait().expect("failed to wait");
+    */
     let mut manifest_path = PathBuf::from(matches.value_of("manifest-path").unwrap());
     if !manifest_path.is_absolute() {
         manifest_path = std::env::current_dir().unwrap().join(manifest_path);
@@ -74,10 +87,19 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let config = Config::default().expect("Error making cargo config");
     let workspace = Workspace::new(&manifest_path, &config).expect("Error making workspace");
 
+    let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true }).expect("Making CompileOptions");
+
+    // set to Default, otherwise cargo will complain about virtual manifest:
+    //
+    // https://docs.rs/cargo/latest/src/cargo/core/workspace.rs.html#265-275
+    // https://docs.rs/cargo/latest/src/cargo/ops/cargo_compile.rs.html#125-184
+    compile_opts.spec = cargo::ops::Packages::Default;
+
+    // println!("{:?}", compile_opts.spec);
+
     let options = DocOptions {
         open_result: false,
-        compile_opts: CompileOptions::new(&config, CompileMode::Doc { deps: true })
-            .expect("Making CompileOptions"),
+        compile_opts: compile_opts,
     };
     println!("Generating documentation for crate...");
     // reference:
