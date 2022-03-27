@@ -1,6 +1,6 @@
 [package]
 name = "cargo-docs"
-version = "0.1.2"
+version = "0.1.3"
 authors = [
   "Daniel Wagner-Hall <dawagner@gmail.com>",
   "Btwiuse Arch <btwiuse@gmail.com>",
@@ -16,28 +16,15 @@ license = "MIT"
 name = "cargo-docs"
 path = "main.rs"
 
-[[bin]]
-name = "cargo-book"
-path = "book.rs"
-
 [dependencies]
-# bytes = "1.1"
-# futures = "0.3"
-# replacing-buf-stream = { path = "replacing-buf-stream" }
-# tower-web = "0.3.7"
-# poem = { version = "1", features = ["static-files"] }
 anyhow = "1"
 cargo = "0.60"
-# cargo = { version = "0.60", path = "../cargo-60/" }
 clap = "2.34"
 futures-util = "0.3"
 http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
 hyper-staticfile = "0.8"
 tokio = { version = "1", features = ["full"] }
-
-# [workspace]
-# members = ["replacing-buf-stream"]
 
 [badges]
 travis-ci = { repository = "illicitonion/cargo-serve-doc", branch = "master" }

@@ -1,8 +1,16 @@
-cargo-serve-doc
-===============
+cargo-docs
+==========
 
-[![crates.io](https://img.shields.io/crates/v/cargo-serve-doc.svg)](https://crates.io/crates/cargo-serve-doc)
-[![Documentation](https://docs.rs/cargo-serve-doc/badge.svg)](https://docs.rs/cargo-serve-doc)
-[![Build Status](https://travis-ci.org/illicitonion/cargo-serve-doc.svg?branch=master)](https://travis-ci.org/illicitonion/cargo-serve-doc)
+[![crates.io](https://img.shields.io/crates/v/cargo-docs.svg)](https://crates.io/crates/cargo-docs)
+[![Documentation](https://docs.rs/cargo-docs/badge.svg)](https://docs.rs/cargo-docs)
+[![Build Status](https://travis-ci.org/btwiuse/cargo-docs.svg?branch=master)](https://travis-ci.org/btwiuse/cargo-docs)
 
-A cargo plugin for serving a unified tree of crate-local and std documentation (as well as the Rust book).
+A cargo plugin for serving crate doc locally.
+
+# Usage
+
+```
+$ cargo-docs
+Generating documentation for crate...
+Serving on http://127.0.0.1:8080
+```
