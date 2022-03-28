@@ -12,6 +12,10 @@ categories = ["development-tools::cargo-plugins"]
 license = "MIT"
 
 [[bin]]
+name = "cargo-book"
+path = "main.rs"
+
+[[bin]]
 name = "cargo-docs"
 path = "main.rs"
 

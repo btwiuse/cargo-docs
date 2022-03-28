@@ -59,10 +59,8 @@ pub async fn handle_crate_request<B>(
     }
 }
 
-pub use cargo_book::serve_dir;
-
 pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
-    Ok(cargo_book::serve_rustbook(addr).await?)
+    Ok(serve_rustbook(addr).await?)
 }
 
 pub async fn serve_crate_doc(
@@ -103,5 +101,56 @@ pub async fn serve_crate_doc(
         }))
     });
 
+    Ok(Server::bind(addr).serve(handler).await?)
+}
+
+/// find rust book location
+// println!("rustup_dir = {rustup_dir:?}");
+// Some("/home/aaron/.rustup/toolchains/nightly-2021-12-13-x86_64-unknown-linux-gnu/share/doc/rust/html")
+pub fn find_rustdoc() -> Option<PathBuf> {
+    let output = std::process::Command::new("rustup")
+        .arg("which")
+        .arg("rustdoc")
+        .output()
+        .unwrap();
+    if output.status.success() {
+        Some(PathBuf::from(String::from_utf8(output.stdout).unwrap()))
+    } else {
+        None
+    }
+    .and_then(|rustdoc| {
+        Some(
+            rustdoc
+                .parent()?
+                .parent()?
+                .join("share")
+                .join("doc")
+                .join("rust")
+                .join("html"),
+        )
+    })
+}
+
+/// request handler
+/// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
+async fn handle_request<B>(
+    req: Request<B>,
+    static_: Static,
+) -> Result<Response<Body>, std::io::Error> {
+    static_.clone().serve(req).await
+}
+
+/// serve rust book on <addr>
+pub async fn serve_rustbook(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
+    let rustdoc_dir = find_rustdoc().unwrap();
+    Ok(serve_dir(addr, &rustdoc_dir).await?)
+}
+
+/// serve directory on <addr>
+pub async fn serve_dir(addr: &std::net::SocketAddr, dir: &PathBuf) -> Result<(), anyhow::Error> {
+    let handler = make_service_fn(|_| {
+        let dir = Static::new(dir.clone());
+        future::ok::<_, hyper::Error>(service_fn(move |req| handle_request(req, dir.clone())))
+    });
     Ok(Server::bind(addr).serve(handler).await?)
 }
