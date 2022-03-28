@@ -1,9 +1,12 @@
-use cargo::core::compiler::CompileMode;
-use cargo::core::Workspace;
-use cargo::ops::{compile, CompileOptions, DocOptions};
+use cargo::core::compiler::{CompileMode, Executor};
+use cargo::core::{PackageId, Target, Workspace};
+use cargo::ops::{compile, compile_with_exec, CompileOptions, DocOptions};
 use cargo::util::config::Config;
-use clap::{crate_version, App, Arg};
+use cargo::util::errors::CargoResult;
+use cargo_util::ProcessBuilder;
+use clap::{Arg, Command, Parser, Subcommand};
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use futures_util::future;
 use http::response::Builder as ResponseBuilder;
@@ -12,6 +15,26 @@ use hyper::server::Server;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response};
 use hyper_staticfile::Static;
+
+/// A `DefaultExecutor` calls rustc without doing anything else. It is Cargo's
+/// default behaviour.
+#[derive(Copy, Clone)]
+pub struct DefaultExecutor;
+
+impl Executor for DefaultExecutor {
+    fn exec(
+        &self,
+        _cmd: &ProcessBuilder,
+        _id: PackageId,
+        _target: &Target,
+        _mode: CompileMode,
+        _on_stdout_line: &mut dyn FnMut(&str) -> CargoResult<()>,
+        _on_stderr_line: &mut dyn FnMut(&str) -> CargoResult<()>,
+    ) -> CargoResult<()> {
+        // cmd.exec_with_streaming(on_stdout_line, on_stderr_line, false).map(drop)
+        Ok(())
+    }
+}
 
 pub fn find_rustdoc() -> Option<PathBuf> {
     let output = std::process::Command::new("rustup")
@@ -26,7 +49,7 @@ pub fn find_rustdoc() -> Option<PathBuf> {
     }
 }
 
-/// https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs
+/// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
 pub async fn handle_request<B>(
     req: Request<B>,
     static_: Static,
@@ -42,44 +65,66 @@ pub async fn handle_request<B>(
     }
 }
 
+#[derive(Parser)]
+#[clap(author, version, about, long_about = None)]
+enum Executable {
+    #[clap(name = "clap")]
+    Clap,
+    #[clap(name = "docs")]
+    Docs(Docs),
+    #[clap(name = "metadata", allow_hyphen_values = true)]
+    Metadata(Metadata),
+    #[clap(subcommand)]
+    Sub(Sub),
+}
+
+#[derive(Subcommand)]
+enum Sub {
+    A { name: String },
+}
+
+#[derive(Parser)]
+struct Metadata {
+    args: Vec<String>,
+}
+
+#[derive(Parser)]
+struct Docs {
+    #[clap(short = 'p', long, default_value = "8080")]
+    /// listening port
+    port: String,
+    #[clap(short = 'c', long, default_value = "Cargo.toml")]
+    /// manifest path
+    manifest_path: String,
+    #[clap(short = 'w', long)]
+    /// TODO: unimplemented
+    watch: bool,
+}
+
 #[tokio::main]
 pub async fn main() -> Result<(), anyhow::Error> {
-    let matches = App::new("cargo-docs")
-        .version(crate_version!())
-        .arg(
-            Arg::with_name("dummy")
-                .hidden(true)
-                .possible_value("serve-doc"),
-        )
-        .arg(
-            Arg::with_name("port")
-                .long("port")
-                .takes_value(true)
-                .default_value("8080"),
-        )
-        .arg(
-            Arg::with_name("manifest-path")
-                .long("manifest-path")
-                .takes_value(true)
-                .default_value("Cargo.toml"),
-        )
-        .get_matches();
+    let cli = Executable::parse();
+    match cli {
+        Executable::Metadata(Metadata { args }) => {
+            let mut child = std::process::Command::new("cargo")
+                .arg("metadata")
+                .args(&args)
+                .spawn()
+                .expect("failed to publish");
+            child.wait().expect("failed to wait");
+            // println!("{:?}", args);
+        }
+        Executable::Docs(docs) => {
+            app(docs.port, docs.manifest_path).await?;
+        }
+        _ => return Ok(()),
+    }
+    return Ok(());
+}
 
-    let port = matches.value_of("port").unwrap();
+async fn app(port: String, manifest_path: String) -> Result<(), anyhow::Error> {
     let addr = format!("127.0.0.1:{port}").parse()?;
-    /*
-    let mut child = Command::new("bash")
-        .arg("-c")
-        .arg("cargo publish --allow-dirty")
-        .env(
-            "CARGO_REGISTRY_TOKEN",
-            "cio15U4IYXkrNsP7jbNxpsfhlNJSICldDL0",
-        )
-        .spawn()
-        .expect("failed to publish");
-    child.wait().expect("failed to wait");
-    */
-    let mut manifest_path = PathBuf::from(matches.value_of("manifest-path").unwrap());
+    let mut manifest_path = PathBuf::from(manifest_path);
     if !manifest_path.is_absolute() {
         manifest_path = std::env::current_dir().unwrap().join(manifest_path);
     }
@@ -87,7 +132,8 @@ pub async fn main() -> Result<(), anyhow::Error> {
     let config = Config::default().expect("Error making cargo config");
     let workspace = Workspace::new(&manifest_path, &config).expect("Error making workspace");
 
-    let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true }).expect("Making CompileOptions");
+    let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true })
+        .expect("Making CompileOptions");
 
     // set to Default, otherwise cargo will complain about virtual manifest:
     //
@@ -102,9 +148,17 @@ pub async fn main() -> Result<(), anyhow::Error> {
         compile_opts: compile_opts,
     };
     println!("Generating documentation for crate...");
+    {
+        let mut child = std::process::Command::new("cargo")
+            .arg("doc")
+            .spawn()
+            .expect("failed to run `cargo doc`");
+        child.wait().expect("failed to wait");
+    }
     // reference:
     // https://docs.rs/cargo/latest/src/cargo/ops/cargo_doc.rs.html#18-34
-    let compilation = compile(&workspace, &options.compile_opts)?;
+    let exec: Arc<dyn Executor> = Arc::new(DefaultExecutor);
+    let compilation = compile_with_exec(&workspace, &options.compile_opts, &exec)?;
     let root_crate_names = &compilation.root_crate_names;
     let crate_name = root_crate_names
         .get(0)
