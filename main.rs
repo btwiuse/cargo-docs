@@ -1,20 +1,5 @@
-use cargo::core::compiler::{CompileMode, Executor};
-use cargo::core::{PackageId, Shell, Target, Verbosity, Workspace};
-use cargo::ops::{compile_with_exec, CompileOptions};
-use cargo::util::config::{homedir, Config};
-use cargo::util::errors::CargoResult;
-use cargo_util::ProcessBuilder;
 use clap::Parser;
 use std::path::PathBuf;
-use std::sync::Arc;
-
-use futures_util::future;
-use http::response::Builder as ResponseBuilder;
-use http::{header, StatusCode};
-use hyper::server::Server;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response};
-use hyper_staticfile::Static;
 
 mod lib;
 
@@ -27,14 +12,20 @@ enum Executable {
 
 #[derive(Parser)]
 struct Options {
+    #[clap(long, default_value = "127.0.0.1")]
+    /// Set host.
+    host: String,
     #[clap(short = 'p', long, default_value = "8080")]
-    /// Set Listening port.
+    /// Set port.
     port: String,
+    #[clap(short = 'd', long)]
+    /// Serve directory content.
+    dir: Option<PathBuf>,
     #[clap(short = 'c', long, default_value = "Cargo.toml")]
     /// Crate manifest path.
     manifest_path: String,
     #[clap(short = 'w', long)]
-    /// Re-generate doc on content change. TODO: unimplemented
+    /// Re-generate doc on change. TODO: unimplemented
     watch: bool,
     #[clap(short = 'o', long)]
     /// Open in browser. TODO: unimplemented
@@ -47,20 +38,34 @@ struct Options {
 }
 
 impl Options {
-    async fn run(&self) -> Result<(), anyhow::Error> {
-        let addr = format!("127.0.0.1:{}", &self.port).parse()?;
-        Ok(if self.book {
-            println!("Serving rust doc on http://127.0.0.1:{}", self.port);
-            self.serve_rust_doc(&addr).await?
-        } else {
-            println!("Serving crate doc on http://127.0.0.1:{}", self.port);
-            // println!("Generating documentation for crate...");
-            lib::run_cargo_doc(&self.extra_args);
-            lib::serve_crate_doc(&self.manifest_path(), &addr).await?
-        })
+    fn host(&self) -> String {
+        self.host.clone()
     }
-    async fn serve_rust_doc(&self, addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
-        Ok(cargo_book::serve_rustbook(addr).await?)
+    fn port(&self) -> String {
+        self.port.clone()
+    }
+    fn hostport(&self) -> String {
+        format!("{}:{}", self.host(), self.port())
+    }
+    fn addr(&self) -> std::net::SocketAddr {
+        self.hostport().parse().unwrap()
+    }
+    async fn run(&self) -> Result<(), anyhow::Error> {
+        let hostport = self.hostport();
+        Ok(if let Some(dir) = self.dir.clone() {
+            let content = dir.into_os_string().into_string().unwrap();
+            println!("Serving {content} on http://{hostport}");
+            lib::serve_dir(&self.addr(), &self.dir.clone().unwrap()).await?
+        } else if self.book {
+            let content = "rust doc";
+            println!("Serving {content} on http://{hostport}");
+            lib::serve_rust_doc(&self.addr()).await?
+        } else {
+            let content = "crate doc";
+            lib::run_cargo_doc(&self.extra_args);
+            println!("Serving {content} on http://{hostport}");
+            lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
+        })
     }
     fn manifest_path(&self) -> PathBuf {
         let mut manifest_path = PathBuf::from(&self.manifest_path);

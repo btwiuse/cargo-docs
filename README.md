@@ -21,7 +21,7 @@ Serving crate doc on http://127.0.0.1:8080
 
 Passthrough `cargo doc` options after --
 ```
-$ cargo docs -p 8080 -- -q
+$ cargo docs -p 8080 -- --quiet
 Serving crate doc on http://127.0.0.1:8080
 ```
 
@@ -29,4 +29,10 @@ Serve rust doc (effectively the same as [cargo-book](https://crates.io/crates/ca
 ```
 $ cargo docs --book
 Serving rust doc on http://127.0.0.1:8080
+```
+
+Serve current directory content on 0.0.0.0:8910 (listing is not supported yet)
+```
+$ cargo docs -d . --host 0.0.0.0 --port 8910
+Serving . on http://0.0.0.0:8910
 ```

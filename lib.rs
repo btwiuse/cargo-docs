@@ -4,10 +4,6 @@ use cargo::ops::{compile_with_exec, CompileOptions};
 use cargo::util::config::{homedir, Config};
 use cargo::util::errors::CargoResult;
 use cargo_util::ProcessBuilder;
-use clap::Parser;
-use std::path::PathBuf;
-use std::sync::Arc;
-
 use futures_util::future;
 use http::response::Builder as ResponseBuilder;
 use http::{header, StatusCode};
@@ -15,6 +11,8 @@ use hyper::server::Server;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Request, Response};
 use hyper_staticfile::Static;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 /// A `DefaultExecutor` calls rustc without doing anything else. It is Cargo's
 /// default behaviour.
@@ -59,6 +57,12 @@ pub async fn handle_crate_request<B>(
             .expect("unable to build response")),
         _ => static_.clone().serve(req).await,
     }
+}
+
+pub use cargo_book::serve_dir;
+
+pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
+    Ok(cargo_book::serve_rustbook(addr).await?)
 }
 
 pub async fn serve_crate_doc(
