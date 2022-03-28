@@ -99,6 +99,11 @@ struct Docs {
     #[clap(short = 'w', long)]
     /// TODO: unimplemented
     watch: bool,
+    #[clap(short = 'o', long)]
+    /// TODO: unimplemented
+    open: bool,
+    /// passthrough extra args to `cargo doc`
+    extra_args: Vec<String>,
 }
 
 #[tokio::main]
@@ -115,16 +120,17 @@ pub async fn main() -> Result<(), anyhow::Error> {
             // println!("{:?}", args);
         }
         Executable::Docs(docs) => {
-            app(docs.port, docs.manifest_path).await?;
+            println!("{:?}", docs.extra_args);
+            app(&docs).await?;
         }
         _ => return Ok(()),
     }
     return Ok(());
 }
 
-async fn app(port: String, manifest_path: String) -> Result<(), anyhow::Error> {
-    let addr = format!("127.0.0.1:{port}").parse()?;
-    let mut manifest_path = PathBuf::from(manifest_path);
+async fn app(docs: &Docs) -> Result<(), anyhow::Error> {
+    let addr = format!("127.0.0.1:{}", &docs.port).parse()?;
+    let mut manifest_path = PathBuf::from(&docs.manifest_path);
     if !manifest_path.is_absolute() {
         manifest_path = std::env::current_dir().unwrap().join(manifest_path);
     }
@@ -151,6 +157,7 @@ async fn app(port: String, manifest_path: String) -> Result<(), anyhow::Error> {
     {
         let mut child = std::process::Command::new("cargo")
             .arg("doc")
+            .args(&docs.extra_args)
             .spawn()
             .expect("failed to run `cargo doc`");
         child.wait().expect("failed to wait");
@@ -196,7 +203,7 @@ async fn app(port: String, manifest_path: String) -> Result<(), anyhow::Error> {
     println!("crate_doc_dir = {crate_doc_dir:?}"); // "/home/aaron/cargo-serve-doc/target/doc"
     println!("rustup_dir = {rustup_dir:?}"); // Some("/home/aaron/.rustup/toolchains/nightly-2021-12-13-x86_64-unknown-linux-gnu/share/doc/rust/html")
     */
-    println!("Serving on http://127.0.0.1:{port}");
+    println!("Serving on http://127.0.0.1:{}", docs.port);
     let handler = make_service_fn(|_| {
         let crate_doc_dir = Static::new(crate_doc_dir.clone());
         let crate_name = crate_name.clone();

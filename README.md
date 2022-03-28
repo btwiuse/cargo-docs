@@ -10,7 +10,14 @@ A cargo plugin for serving crate doc locally.
 # Usage
 
 ```
-$ cargo-docs
+$ cargo docs
+Generating documentation for crate...
+Serving on http://127.0.0.1:8080
+```
+
+passthrough `cargo doc` options after --
+```
+$ cargo docs -- -q
 Generating documentation for crate...
 Serving on http://127.0.0.1:8080
 ```
