@@ -12,13 +12,13 @@ enum Executable {
 
 #[derive(Parser)]
 struct Options {
-    #[clap(long, default_value = "127.0.0.1")]
+    #[clap(long, env = "HOST", default_value = "127.0.0.1")]
     /// Set host.
     host: String,
-    #[clap(short = 'p', long, default_value = "8080")]
+    #[clap(short = 'p', long, env = "PORT", default_value = "8080")]
     /// Set port.
     port: String,
-    #[clap(short = 'd', long)]
+    #[clap(short = 'd', long, env = "DIR")]
     /// Serve directory content.
     dir: Option<PathBuf>,
     #[clap(short = 'c', long, default_value = "Cargo.toml")]

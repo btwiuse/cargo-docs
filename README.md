@@ -11,12 +11,19 @@ By default, it will call `cargo doc` to build crate doc and start a local server
 
 Add `--book` option to see rust doc instead.
 
-# Usage
+# Examples
 
 Serve crate doc on local port 8080
 ```
 $ cargo docs -p 8080
 Serving crate doc on http://127.0.0.1:8080
+```
+
+Set host, port using `HOST`, `PORT` environment variable
+```
+$ cargo docs -p 8080
+$ HOST=0.0.0.0 PORT=3333 cargo docs
+Serving crate doc on http://0.0.0.0:3333
 ```
 
 Passthrough `cargo doc` options after --
