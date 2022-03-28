@@ -1,10 +1,10 @@
 use cargo::core::compiler::{CompileMode, Executor};
 use cargo::core::{PackageId, Target, Workspace};
-use cargo::ops::{compile, compile_with_exec, CompileOptions, DocOptions};
+use cargo::ops::{compile_with_exec, CompileOptions, DocOptions};
 use cargo::util::config::Config;
 use cargo::util::errors::CargoResult;
 use cargo_util::ProcessBuilder;
-use clap::{Arg, Command, Parser, Subcommand};
+use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 use std::sync::Arc;
 
