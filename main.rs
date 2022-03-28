@@ -19,7 +19,7 @@ use hyper_staticfile::Static;
 /// A `DefaultExecutor` calls rustc without doing anything else. It is Cargo's
 /// default behaviour.
 #[derive(Copy, Clone)]
-pub struct DefaultExecutor;
+struct DefaultExecutor;
 
 impl Executor for DefaultExecutor {
     fn exec(
@@ -36,21 +36,8 @@ impl Executor for DefaultExecutor {
     }
 }
 
-pub fn find_rustdoc() -> Option<PathBuf> {
-    let output = std::process::Command::new("rustup")
-        .arg("which")
-        .arg("rustdoc")
-        .output()
-        .unwrap();
-    if output.status.success() {
-        Some(PathBuf::from(String::from_utf8(output.stdout).unwrap()))
-    } else {
-        None
-    }
-}
-
 /// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
-pub async fn handle_request<B>(
+async fn handle_request<B>(
     req: Request<B>,
     static_: Static,
     crate_name: String,
@@ -91,7 +78,7 @@ struct Options {
 }
 
 #[tokio::main]
-pub async fn main() -> Result<(), anyhow::Error> {
+async fn main() -> Result<(), anyhow::Error> {
     match Executable::parse() {
         Executable::Docs(options) => {
             run(&options).await?;
