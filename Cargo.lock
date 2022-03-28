@@ -153,26 +153,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "cargo-book"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e7cb3d755f02aed5ac48b827f79b80ad90a752b6c65fb445ab6ba770ce0ffe6"
-dependencies = [
- "anyhow",
- "clap 3.1.6",
- "futures-util",
- "hyper",
- "hyper-staticfile",
- "tokio",
-]
-
-[[package]]
 name = "cargo-docs"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyhow",
  "cargo",
- "cargo-book",
  "cargo-util",
  "clap 3.1.6",
  "dirs",

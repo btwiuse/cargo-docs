@@ -1,15 +1,9 @@
-use clap::{Parser, Subcommand};
-use futures_util::future;
-use hyper::server::Server;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response};
-use hyper_staticfile::Static;
-use std::path::PathBuf;
-
 #[path = "./lib.rs"]
 mod lib;
 
-#[derive(Parser)]
+use std::path::PathBuf;
+
+#[derive(clap::Parser)]
 pub struct Options {
     #[clap(long, env = "HOST", default_value = "127.0.0.1")]
     /// Set host.
@@ -49,6 +43,13 @@ impl Options {
     fn addr(&self) -> std::net::SocketAddr {
         self.hostport().parse().unwrap()
     }
+    fn manifest_path(&self) -> PathBuf {
+        let mut manifest_path = PathBuf::from(&self.manifest_path);
+        if !manifest_path.is_absolute() {
+            manifest_path = std::env::current_dir().unwrap().join(manifest_path);
+        }
+        manifest_path
+    }
     pub async fn run(&self) -> Result<(), anyhow::Error> {
         let hostport = self.hostport();
         Ok(if let Some(dir) = self.dir.clone() {
@@ -65,12 +66,5 @@ impl Options {
             println!("Serving {content} on http://{hostport}");
             lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
         })
-    }
-    fn manifest_path(&self) -> PathBuf {
-        let mut manifest_path = PathBuf::from(&self.manifest_path);
-        if !manifest_path.is_absolute() {
-            manifest_path = std::env::current_dir().unwrap().join(manifest_path);
-        }
-        manifest_path
     }
 }

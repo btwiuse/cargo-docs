@@ -34,6 +34,7 @@ impl Executor for DefaultExecutor {
     }
 }
 
+#[allow(dead_code)]
 pub fn run_cargo_doc(args: &Vec<String>) {
     let mut child = std::process::Command::new("cargo")
         .arg("doc")
@@ -43,6 +44,7 @@ pub fn run_cargo_doc(args: &Vec<String>) {
     child.wait().expect("failed to wait");
 }
 
+#[allow(dead_code)]
 /// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
 pub async fn handle_crate_request<B>(
     req: Request<B>,
@@ -59,10 +61,12 @@ pub async fn handle_crate_request<B>(
     }
 }
 
+#[allow(dead_code)]
 pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
     Ok(serve_rustbook(addr).await?)
 }
 
+#[allow(dead_code)]
 pub async fn serve_crate_doc(
     manifest_path: &PathBuf,
     addr: &std::net::SocketAddr,
@@ -131,6 +135,7 @@ pub fn find_rustdoc() -> Option<PathBuf> {
     })
 }
 
+#[allow(dead_code)]
 /// request handler
 /// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
 async fn handle_request<B>(
@@ -140,12 +145,14 @@ async fn handle_request<B>(
     static_.clone().serve(req).await
 }
 
+#[allow(dead_code)]
 /// serve rust book on <addr>
 pub async fn serve_rustbook(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
     let rustdoc_dir = find_rustdoc().unwrap();
     Ok(serve_dir(addr, &rustdoc_dir).await?)
 }
 
+#[allow(dead_code)]
 /// serve directory on <addr>
 pub async fn serve_dir(addr: &std::net::SocketAddr, dir: &PathBuf) -> Result<(), anyhow::Error> {
     let handler = make_service_fn(|_| {

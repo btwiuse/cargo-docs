@@ -1,20 +1,15 @@
-use clap::{Parser, Subcommand};
-use futures_util::future;
-use hyper::server::Server;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response};
-use hyper_staticfile::Static;
-use std::path::PathBuf;
-
 #[path = "./lib.rs"]
 mod lib;
 
-#[derive(Parser)]
+#[derive(clap::Parser)]
 pub struct Options {
     #[clap(short = 'l', long)]
     /// Show rustdoc location then exit
     locate: bool,
-    #[clap(short = 'p', long, default_value = "8080")]
+    #[clap(long, env = "HOST", default_value = "127.0.0.1")]
+    /// Set host.
+    host: String,
+    #[clap(short = 'p', long, env = "PORT", default_value = "8080")]
     /// Set listening port
     port: String,
     #[clap(short = 'o', long)]
@@ -23,6 +18,18 @@ pub struct Options {
 }
 
 impl Options {
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+    fn port(&self) -> String {
+        self.port.clone()
+    }
+    fn hostport(&self) -> String {
+        format!("{}:{}", self.host(), self.port())
+    }
+    fn addr(&self) -> std::net::SocketAddr {
+        self.hostport().parse().unwrap()
+    }
     pub async fn run(&self) -> Result<(), anyhow::Error> {
         if self.locate {
             let dir = lib::find_rustdoc()
@@ -33,8 +40,7 @@ impl Options {
             println!("{}", dir);
             return Ok(());
         }
-        println!("Serving on http://127.0.0.1:{}", &self.port);
-        let addr: std::net::SocketAddr = format!("127.0.0.1:{}", &self.port).parse()?;
-        Ok(lib::serve_rustbook(&addr).await?)
+        println!("Serving rust doc on http://{}", &self.hostport());
+        Ok(lib::serve_rustbook(&self.addr()).await?)
     }
 }
