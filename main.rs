@@ -1,10 +1,10 @@
 use cargo::core::compiler::{CompileMode, Executor};
-use cargo::core::{PackageId, Target, Workspace};
-use cargo::ops::{compile_with_exec, CompileOptions, DocOptions};
-use cargo::util::config::Config;
+use cargo::core::{PackageId, Shell, Target, Verbosity, Workspace};
+use cargo::ops::{compile_with_exec, CompileOptions};
+use cargo::util::config::{homedir, Config};
 use cargo::util::errors::CargoResult;
 use cargo_util::ProcessBuilder;
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -68,28 +68,12 @@ pub async fn handle_request<B>(
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None)]
 enum Executable {
-    #[clap(name = "clap")]
-    Clap,
     #[clap(name = "docs")]
-    Docs(Docs),
-    #[clap(name = "metadata", allow_hyphen_values = true)]
-    Metadata(Metadata),
-    #[clap(subcommand)]
-    Sub(Sub),
-}
-
-#[derive(Subcommand)]
-enum Sub {
-    A { name: String },
+    Docs(Options),
 }
 
 #[derive(Parser)]
-struct Metadata {
-    args: Vec<String>,
-}
-
-#[derive(Parser)]
-struct Docs {
+struct Options {
     #[clap(short = 'p', long, default_value = "8080")]
     /// listening port
     port: String,
@@ -108,34 +92,35 @@ struct Docs {
 
 #[tokio::main]
 pub async fn main() -> Result<(), anyhow::Error> {
-    let cli = Executable::parse();
-    match cli {
-        Executable::Metadata(Metadata { args }) => {
-            let mut child = std::process::Command::new("cargo")
-                .arg("metadata")
-                .args(&args)
-                .spawn()
-                .expect("failed to publish");
-            child.wait().expect("failed to wait");
-            // println!("{:?}", args);
+    match Executable::parse() {
+        Executable::Docs(options) => {
+            run(&options).await?;
         }
-        Executable::Docs(docs) => {
-            println!("{:?}", docs.extra_args);
-            app(&docs).await?;
-        }
-        _ => return Ok(()),
     }
     return Ok(());
 }
 
-async fn app(docs: &Docs) -> Result<(), anyhow::Error> {
-    let addr = format!("127.0.0.1:{}", &docs.port).parse()?;
-    let mut manifest_path = PathBuf::from(&docs.manifest_path);
+fn cargo_doc(args: &Vec<String>) {
+    let mut child = std::process::Command::new("cargo")
+        .arg("doc")
+        .args(args)
+        .spawn()
+        .expect("failed to run `cargo doc`");
+    child.wait().expect("failed to wait");
+}
+
+async fn run(options: &Options) -> Result<(), anyhow::Error> {
+    let addr = format!("127.0.0.1:{}", &options.port).parse()?;
+    let mut manifest_path = PathBuf::from(&options.manifest_path);
     if !manifest_path.is_absolute() {
         manifest_path = std::env::current_dir().unwrap().join(manifest_path);
     }
 
-    let config = Config::default().expect("Error making cargo config");
+    let mut shell = Shell::default();
+    shell.set_verbosity(Verbosity::Quiet);
+    let cwd = std::env::current_dir().unwrap();
+    let cargo_home_dir = homedir(&cwd).unwrap();
+    let config = Config::new(shell, cwd, cargo_home_dir);
     let workspace = Workspace::new(&manifest_path, &config).expect("Error making workspace");
 
     let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true })
@@ -147,63 +132,20 @@ async fn app(docs: &Docs) -> Result<(), anyhow::Error> {
     // https://docs.rs/cargo/latest/src/cargo/ops/cargo_compile.rs.html#125-184
     compile_opts.spec = cargo::ops::Packages::Default;
 
-    // println!("{:?}", compile_opts.spec);
-
-    let options = DocOptions {
-        open_result: false,
-        compile_opts: compile_opts,
-    };
-    println!("Generating documentation for crate...");
-    {
-        let mut child = std::process::Command::new("cargo")
-            .arg("doc")
-            .args(&docs.extra_args)
-            .spawn()
-            .expect("failed to run `cargo doc`");
-        child.wait().expect("failed to wait");
-    }
+    // println!("Generating documentation for crate...");
+    cargo_doc(&options.extra_args);
     // reference:
     // https://docs.rs/cargo/latest/src/cargo/ops/cargo_doc.rs.html#18-34
     let exec: Arc<dyn Executor> = Arc::new(DefaultExecutor);
-    let compilation = compile_with_exec(&workspace, &options.compile_opts, &exec)?;
+    let compilation = compile_with_exec(&workspace, &compile_opts, &exec)?;
     let root_crate_names = &compilation.root_crate_names;
     let crate_name = root_crate_names
         .get(0)
         .ok_or_else(|| anyhow::anyhow!("no crates with documentation"))?;
-    /*
-    let kind = options.compile_opts.build_config.single_requested_kind()?;
-    let path = compilation.root_output[&kind]
-        .with_file_name("doc")
-        .join(&crate_name)
-        .join("index.html");
-    println!("{:?}", &root_crate_names); // ["cargo_docs"]
-    println!("{:?}", &crate_name); // cargo_docs
-    println!("{:?}", &kind); // Host
-    println!("{:?}", &path); // "/home/aaron/cargo-serve-doc/target/doc/cargo_docs/index.html"
-    */
-    // doc(&workspace, &options).expect("Running doc");
-    // println!("{:?}", workspace);
-    // println!("{:?}", options);
 
     let crate_doc_dir = workspace.target_dir().join("doc").into_path_unlocked();
 
-    /*
-    let rustup_dir = find_rustdoc().and_then(|rustdoc| {
-        Some(
-            rustdoc
-                .parent()?
-                .parent()?
-                .join("share")
-                .join("doc")
-                .join("rust")
-                .join("html"),
-        )
-    });
-
-    println!("crate_doc_dir = {crate_doc_dir:?}"); // "/home/aaron/cargo-serve-doc/target/doc"
-    println!("rustup_dir = {rustup_dir:?}"); // Some("/home/aaron/.rustup/toolchains/nightly-2021-12-13-x86_64-unknown-linux-gnu/share/doc/rust/html")
-    */
-    println!("Serving on http://127.0.0.1:{}", docs.port);
+    println!("Serving on http://127.0.0.1:{}", options.port);
     let handler = make_service_fn(|_| {
         let crate_doc_dir = Static::new(crate_doc_dir.clone());
         let crate_name = crate_name.clone();
