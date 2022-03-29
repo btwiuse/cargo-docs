@@ -21,7 +21,6 @@ Serving crate doc on http://127.0.0.1:8080
 
 Set host, port using `HOST`, `PORT` environment variable
 ```
-$ cargo docs -p 8080
 $ HOST=0.0.0.0 PORT=3333 cargo docs
 Serving crate doc on http://0.0.0.0:3333
 ```
@@ -42,4 +41,10 @@ Serve current directory content on 0.0.0.0:8910 (listing is not supported yet)
 ```
 $ cargo docs -d . --host 0.0.0.0 --port 8910
 Serving . on http://0.0.0.0:8910
+```
+
+Serve files under ./target/doc
+```
+$ DIR=./target/doc cargo docs
+Serving ./target/doc on http://127.0.0.1:8080
 ```
