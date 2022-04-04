@@ -32,7 +32,13 @@ By default, it will call `cargo doc` to build crate doc and start a local server
 
 Add `--book` option to see rust doc instead.
 
-# Examples
+## Install
+
+```
+$ cargo install cargo-docs
+```
+
+## Examples
 
 Serve crate doc on local port 8080
 ```

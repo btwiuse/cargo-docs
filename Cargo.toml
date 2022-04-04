@@ -1,11 +1,12 @@
 [package]
 name = "cargo-docs"
-version = "0.1.9"
+version = "0.1.10"
 authors = [
   "Btwiuse Arch <btwiuse@gmail.com>",
 ]
 edition = "2021"
 description = "A cargo plugin for serving rust and crate doc locally."
+documentation = "https://docs.rs/cargo-docs"
 repository = "https://github.com/btwiuse/cargo-docs"
 readme = "README.md"
 categories = ["development-tools::cargo-plugins"]
