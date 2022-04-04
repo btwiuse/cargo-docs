@@ -14,26 +14,6 @@ use hyper_staticfile::Static;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-/// A `DefaultExecutor` calls rustc without doing anything else. It is Cargo's
-/// default behaviour.
-#[derive(Copy, Clone)]
-pub struct DefaultExecutor;
-
-impl Executor for DefaultExecutor {
-    fn exec(
-        &self,
-        _cmd: &ProcessBuilder,
-        _id: PackageId,
-        _target: &Target,
-        _mode: CompileMode,
-        _on_stdout_line: &mut dyn FnMut(&str) -> CargoResult<()>,
-        _on_stderr_line: &mut dyn FnMut(&str) -> CargoResult<()>,
-    ) -> CargoResult<()> {
-        // cmd.exec_with_streaming(on_stdout_line, on_stderr_line, false).map(drop)
-        Ok(())
-    }
-}
-
 /// run `cargo doc` with extra args
 #[allow(dead_code)]
 pub fn run_cargo_doc(args: &Vec<String>) {
@@ -94,6 +74,26 @@ pub async fn serve_crate_doc(
 
     // reference:
     // https://docs.rs/cargo/latest/src/cargo/ops/cargo_doc.rs.html#18-34
+    /// A `DefaultExecutor` calls rustc without doing anything else. It is Cargo's
+    /// default behaviour.
+    #[derive(Copy, Clone)]
+    struct DefaultExecutor;
+
+    impl Executor for DefaultExecutor {
+        fn exec(
+            &self,
+            _cmd: &ProcessBuilder,
+            _id: PackageId,
+            _target: &Target,
+            _mode: CompileMode,
+            _on_stdout_line: &mut dyn FnMut(&str) -> CargoResult<()>,
+            _on_stderr_line: &mut dyn FnMut(&str) -> CargoResult<()>,
+        ) -> CargoResult<()> {
+            // cmd.exec_with_streaming(on_stdout_line, on_stderr_line, false).map(drop)
+            Ok(())
+        }
+    }
+
     let exec: Arc<dyn Executor> = Arc::new(DefaultExecutor);
     let compilation = compile_with_exec(&workspace, &compile_opts, &exec)?;
     let root_crate_names = &compilation.root_crate_names;
@@ -140,10 +140,11 @@ pub fn find_rustdoc() -> Option<PathBuf> {
     })
 }
 
-#[allow(dead_code)]
-/// request handler
+/// static request handler
+///
 /// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
-async fn handle_request<B>(
+#[allow(dead_code)]
+pub async fn handle_request<B>(
     req: Request<B>,
     static_: Static,
 ) -> Result<Response<Body>, std::io::Error> {
