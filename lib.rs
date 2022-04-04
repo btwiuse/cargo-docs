@@ -34,6 +34,7 @@ impl Executor for DefaultExecutor {
     }
 }
 
+/// run `cargo doc` with extra args
 #[allow(dead_code)]
 pub fn run_cargo_doc(args: &Vec<String>) {
     let mut child = std::process::Command::new("cargo")
@@ -44,8 +45,10 @@ pub fn run_cargo_doc(args: &Vec<String>) {
     child.wait().expect("failed to wait");
 }
 
-#[allow(dead_code)]
+/// handle crate doc request with redirect on `/`
+///
 /// <https://github.com/stephank/hyper-staticfile/blob/HEAD/examples/doc_server.rs>
+#[allow(dead_code)]
 pub async fn handle_crate_request<B>(
     req: Request<B>,
     static_: Static,
@@ -61,11 +64,13 @@ pub async fn handle_crate_request<B>(
     }
 }
 
+/// serve rust book / std doc on `addr`
 #[allow(dead_code)]
 pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
     Ok(serve_rustbook(addr).await?)
 }
 
+/// serve crate doc on `addr`
 #[allow(dead_code)]
 pub async fn serve_crate_doc(
     manifest_path: &PathBuf,
@@ -145,16 +150,16 @@ async fn handle_request<B>(
     static_.clone().serve(req).await
 }
 
+/// serve rust book on `addr`
 #[allow(dead_code)]
-/// serve rust book on <addr>
 pub async fn serve_rustbook(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
     let rustdoc_dir = find_rustdoc().unwrap();
-    Ok(serve_dir(addr, &rustdoc_dir).await?)
+    Ok(serve_dir(&rustdoc_dir, addr).await?)
 }
 
+/// serve `dir` on `addr`
 #[allow(dead_code)]
-/// serve directory on <addr>
-pub async fn serve_dir(addr: &std::net::SocketAddr, dir: &PathBuf) -> Result<(), anyhow::Error> {
+pub async fn serve_dir(dir: &PathBuf, addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
     let handler = make_service_fn(|_| {
         let dir = Static::new(dir.clone());
         future::ok::<_, hyper::Error>(service_fn(move |req| handle_request(req, dir.clone())))

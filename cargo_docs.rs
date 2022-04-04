@@ -55,7 +55,7 @@ impl Options {
         Ok(if let Some(dir) = self.dir.clone() {
             let content = dir.into_os_string().into_string().unwrap();
             println!("Serving {content} on http://{hostport}");
-            lib::serve_dir(&self.addr(), &self.dir.clone().unwrap()).await?
+            lib::serve_dir(&self.dir.clone().unwrap(), &self.addr()).await?
         } else if self.book {
             let content = "rust doc";
             println!("Serving {content} on http://{hostport}");
