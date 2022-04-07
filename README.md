@@ -23,7 +23,7 @@ OPTIONS:
     -d, --dir <DIR>                        Serve directory content [env: DIR=]
     -h, --help                             Print help information
         --host <HOST>                      Set host [env: HOST=] [default: 127.0.0.1]
-    -o, --open                             Open in browser. TODO: unimplemented
+    -o, --open                             Open in browser
     -p, --port <PORT>                      Set port [env: PORT=] [default: 8080]
     -w, --watch                            Re-generate doc on change. TODO: unimplemented
 ```
@@ -40,9 +40,10 @@ $ cargo install cargo-docs
 
 ## Examples
 
-Serve crate doc on local port 8080
+Serve crate doc and open in browser  
+If you are on WSL2, set `BROWSER=explorer.exe` environment variable to open in desktop browser
 ```
-$ cargo docs -p 8080
+$ cargo docs -o
 Serving crate doc on http://127.0.0.1:8080
 ```
 

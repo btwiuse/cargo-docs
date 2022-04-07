@@ -1,6 +1,6 @@
 [package]
 name = "cargo-docs"
-version = "0.1.10"
+version = "0.1.11"
 authors = [
   "Btwiuse Arch <btwiuse@gmail.com>",
 ]
@@ -34,6 +34,7 @@ http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
 hyper-staticfile = "0.8"
 tokio = { version = "1", features = ["full"] }
+opener = "0.5"
 
 [badges]
 travis-ci = { repository = "btwiuse/cargo-docs", branch = "master" }

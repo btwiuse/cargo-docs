@@ -21,7 +21,7 @@ pub struct Options {
     /// Re-generate doc on change. TODO: unimplemented
     watch: bool,
     #[clap(short = 'o', long)]
-    /// Open in browser. TODO: unimplemented
+    /// Open in browser.
     open: bool,
     #[clap(short = 'b', long)]
     /// Serve rust book and std doc instead.
@@ -40,6 +40,9 @@ impl Options {
     fn hostport(&self) -> String {
         format!("{}:{}", self.host(), self.port())
     }
+    fn url(&self) -> String {
+        format!("http://{}", self.hostport())
+    }
     fn addr(&self) -> std::net::SocketAddr {
         self.hostport().parse().unwrap()
     }
@@ -50,20 +53,31 @@ impl Options {
         }
         manifest_path
     }
+    fn open(&self) -> Result<(), anyhow::Error> {
+        if self.open {
+            self.open_browser(self.url())?
+        }
+        Ok(())
+    }
+    fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
+        Ok(opener::open_browser(path)?)
+    }
     pub async fn run(&self) -> Result<(), anyhow::Error> {
-        let hostport = self.hostport();
+        let url = self.url();
         Ok(if let Some(dir) = self.dir.clone() {
             let content = dir.into_os_string().into_string().unwrap();
-            println!("Serving {content} on http://{hostport}");
+            println!("Serving {content} on {url}");
             lib::serve_dir(&self.dir.clone().unwrap(), &self.addr()).await?
         } else if self.book {
             let content = "rust doc";
-            println!("Serving {content} on http://{hostport}");
+            println!("Serving {content} on {url}");
+            self.open()?;
             lib::serve_rust_doc(&self.addr()).await?
         } else {
             let content = "crate doc";
             lib::run_cargo_doc(&self.extra_args);
-            println!("Serving {content} on http://{hostport}");
+            println!("Serving {content} on {url}");
+            self.open()?;
             lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
         })
     }
