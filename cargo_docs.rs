@@ -6,27 +6,30 @@ use std::path::PathBuf;
 #[derive(clap::Parser)]
 pub struct Options {
     #[clap(long, env = "HOST", default_value = "127.0.0.1")]
-    /// Set host.
+    /// Set host
     host: String,
     #[clap(short = 'p', long, env = "PORT", default_value = "8080")]
-    /// Set port.
+    /// Set port
     port: String,
+    #[clap(short = 'r', long)]
+    /// Use random port
+    random_port: bool,
     #[clap(short = 'd', long, env = "DIR")]
-    /// Serve directory content.
+    /// Serve directory content
     dir: Option<PathBuf>,
     #[clap(short = 'c', long, default_value = "Cargo.toml")]
     /// Crate manifest path.
     manifest_path: String,
     #[clap(short = 'w', long)]
-    /// Re-generate doc on change. TODO: unimplemented
+    /// Re-generate doc on change TODO: unimplemented
     watch: bool,
     #[clap(short = 'o', long)]
-    /// Open in browser.
+    /// Open in browser
     open: bool,
     #[clap(short = 'b', long)]
-    /// Serve rust book and std doc instead.
+    /// Serve rust book and std doc instead
     book: bool,
-    /// Passthrough extra args to `cargo doc`.
+    /// Passthrough extra args to `cargo doc`
     extra_args: Vec<String>,
 }
 
@@ -36,6 +39,10 @@ impl Options {
     }
     fn port(&self) -> String {
         self.port.clone()
+    }
+    fn get_port(&self) -> std::io::Result<u16> {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+        Ok(listener.local_addr()?.port())
     }
     fn hostport(&self) -> String {
         format!("{}:{}", self.host(), self.port())
@@ -62,7 +69,10 @@ impl Options {
     fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
         Ok(opener::open_browser(path)?)
     }
-    pub async fn run(&self) -> Result<(), anyhow::Error> {
+    pub async fn run(&mut self) -> Result<(), anyhow::Error> {
+        if self.random_port {
+            self.port = format!("{}", self.get_port().unwrap());
+        }
         let url = self.url();
         Ok(if let Some(dir) = self.dir.clone() {
             let content = dir.into_os_string().into_string().unwrap();

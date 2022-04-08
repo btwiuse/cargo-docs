@@ -25,7 +25,8 @@ OPTIONS:
         --host <HOST>                      Set host [env: HOST=] [default: 127.0.0.1]
     -o, --open                             Open in browser
     -p, --port <PORT>                      Set port [env: PORT=] [default: 8080]
-    -w, --watch                            Re-generate doc on change. TODO: unimplemented
+    -r, --random-port                      Use random port
+    -w, --watch                            Re-generate doc on change TODO: unimplemented
 ```
 
 By default, it will call `cargo doc` to build crate doc and start a local server.
@@ -40,17 +41,17 @@ $ cargo install cargo-docs
 
 ## Examples
 
-Serve crate doc and open in browser  
+Serve crate doc on random port and open in browser  
 If you are on WSL2, set `BROWSER=explorer.exe` environment variable to open in desktop browser
 ```
-$ cargo docs -o
-Serving crate doc on http://127.0.0.1:8080
+$ cargo docs -ro
+Serving crate doc on http://127.0.0.1:38501
 ```
 
-Set host, port using `HOST`, `PORT` environment variable
+Serve rust doc (effectively the same as [cargo-book](https://crates.io/crates/cargo-book)) on random port and open in browser
 ```
-$ HOST=0.0.0.0 PORT=3333 cargo docs
-Serving crate doc on http://0.0.0.0:3333
+$ cargo docs -rob
+Serving rust doc on http://127.0.0.1:38957
 ```
 
 Passthrough `cargo doc` options after --
@@ -59,10 +60,10 @@ $ cargo docs -p 8080 -- --quiet
 Serving crate doc on http://127.0.0.1:8080
 ```
 
-Serve rust doc (effectively the same as [cargo-book](https://crates.io/crates/cargo-book))
+Set host, port using `HOST`, `PORT` environment variable
 ```
-$ cargo docs --book
-Serving rust doc on http://127.0.0.1:8080
+$ HOST=0.0.0.0 PORT=3333 cargo docs
+Serving crate doc on http://0.0.0.0:3333
 ```
 
 Serve current directory content on 0.0.0.0:8910 (listing is not supported yet)

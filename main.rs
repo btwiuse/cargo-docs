@@ -15,10 +15,10 @@ enum Executable {
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
     Ok(match Executable::parse() {
-        Executable::Docs(options) => {
+        Executable::Docs(mut options) => {
             options.run().await?;
         }
-        Executable::Book(options) => {
+        Executable::Book(mut options) => {
             options.run().await?;
         }
     })
