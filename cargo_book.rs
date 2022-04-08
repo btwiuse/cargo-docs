@@ -10,9 +10,6 @@ mod lib;
 )]
 pub struct Options {
     #[clap(long)]
-    /// Select a book interactively
-    skim: bool,
-    #[clap(long)]
     /// List available books
     list: bool,
     #[clap(long)]
@@ -33,7 +30,7 @@ pub struct Options {
     #[clap(short = 'o', long, env = "CARGO_BOOK_OPEN")]
     /// Open in browser
     open: bool,
-    /// Book to read, use `--list` or `--skim` to see available books
+    /// Book to read, use `--list` to see available books
     book: Option<Book>,
 }
 
@@ -180,7 +177,7 @@ impl Options {
                 println!("{: <16} {}", book, book.get_documentation().unwrap());
             }
         } else {
-            if self.skim {
+            if self.book.is_none() {
                 use strum::IntoEnumIterator;
                 if let Some(book) = select_one(Book::iter()) {
                     self.book = Some(book.text().to_string().parse()?);
