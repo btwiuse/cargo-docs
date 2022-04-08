@@ -17,6 +17,16 @@ use std::sync::Arc;
 /// run `cargo doc` with extra args
 #[allow(dead_code)]
 pub fn run_cargo_doc(args: &Vec<String>) {
+    let mut cmd = std::process::Command::new("cargo");
+    cmd.arg("doc").args(args);
+    println!(
+        "Running {} {}",
+        cmd.get_program().to_string_lossy(),
+        cmd.get_args()
+            .map(|s| s.to_string_lossy().to_string())
+            .collect::<Vec<String>>()
+            .join(" ")
+    );
     let mut child = std::process::Command::new("cargo")
         .arg("doc")
         .args(args)
