@@ -10,6 +10,9 @@ mod lib;
 )]
 pub struct Options {
     #[clap(long)]
+    /// Show index page to all books
+    all: bool,
+    #[clap(long)]
     /// List available books
     list: bool,
     #[clap(long)]
@@ -177,7 +180,7 @@ impl Options {
                 println!("{: <16} {}", book, book.get_documentation().unwrap());
             }
         } else {
-            if self.book.is_none() {
+            if self.book.is_none() && !self.all {
                 use strum::IntoEnumIterator;
                 if let Some(book) = select_one(Book::iter()) {
                     self.book = Some(book.text().to_string().parse()?);
