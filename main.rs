@@ -14,6 +14,7 @@ enum Executable {
 
 #[tokio::main]
 async fn main() -> Result<(), anyhow::Error> {
+    lg::info::init()?;
     Ok(match Executable::parse() {
         Executable::Docs(mut options) => {
             options.run().await?;

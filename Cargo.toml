@@ -1,6 +1,6 @@
 [package]
 name = "cargo-docs"
-version = "0.1.15"
+version = "0.1.16"
 authors = [
   "Btwiuse Arch <btwiuse@gmail.com>",
 ]
@@ -37,6 +37,8 @@ tokio = { version = "1", features = ["full"] }
 opener = "0.5"
 strum = { version = "0.24", features = ["derive"] }
 skim = "0.9"
+log = "0.4"
+lg = "0.1"
 
 [badges]
 travis-ci = { repository = "btwiuse/cargo-docs", branch = "master" }

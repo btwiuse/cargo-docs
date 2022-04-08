@@ -80,7 +80,7 @@ impl Options {
     }
     fn open(&self) -> Result<(), anyhow::Error> {
         if self.open {
-            println!("Opening {}", self.link());
+            log::info!("Opening {}", self.link());
             self.open_browser(self.link())?
         }
         Ok(())
@@ -95,17 +95,17 @@ impl Options {
         let url = self.url();
         Ok(if let Some(dir) = self.dir.clone() {
             let content = dir.into_os_string().into_string().unwrap();
-            println!("Serving {content} on {url}");
+            log::info!("Serving {content} on {url}");
             lib::serve_dir(&self.dir.clone().unwrap(), &self.addr()).await?
         } else if self.book {
             let content = "rust doc";
-            println!("Serving {content} on {url}");
+            log::info!("Serving {content} on {url}");
             self.open()?;
             lib::serve_rust_doc(&self.addr()).await?
         } else {
             let content = "crate doc";
             lib::run_cargo_doc(&self.extra_args);
-            println!("Serving {content} on {url}");
+            log::info!("Serving {content} on {url}");
             self.open()?;
             lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
         })

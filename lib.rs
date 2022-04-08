@@ -19,7 +19,7 @@ use std::sync::Arc;
 pub fn run_cargo_doc(args: &Vec<String>) {
     let mut cmd = std::process::Command::new("cargo");
     cmd.arg("doc").args(args);
-    println!(
+    log::info!(
         "Running {} {}",
         cmd.get_program().to_string_lossy(),
         cmd.get_args()
@@ -129,8 +129,8 @@ pub async fn serve_crate_doc(
 }
 
 /// find rust book location
-// println!("rustup_dir = {rustup_dir:?}");
-// Some("/home/aaron/.rustup/toolchains/nightly-2021-12-13-x86_64-unknown-linux-gnu/share/doc/rust/html")
+///
+/// Some("/home/aaron/.rustup/toolchains/nightly-2021-12-13-x86_64-unknown-linux-gnu/share/doc/rust/html")
 pub fn find_rustdoc() -> Option<PathBuf> {
     let output = std::process::Command::new("rustup")
         .arg("which")

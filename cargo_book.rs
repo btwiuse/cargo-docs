@@ -155,7 +155,7 @@ impl Options {
     fn open(&self) -> Result<(), anyhow::Error> {
         Ok(if self.open {
             let link = self.book_link();
-            println!("Opening {link}");
+            log::info!("Opening {link}");
             self.open_browser(link)?
         })
     }
@@ -188,7 +188,7 @@ impl Options {
                     return Ok(());
                 }
             }
-            println!("Serving rust doc on {}", &self.url());
+            log::info!("Serving rust doc on {}", &self.url());
             self.open()?;
             lib::serve_rustbook(&self.addr()).await?
         })
