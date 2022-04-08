@@ -90,13 +90,12 @@ enum Book {
     EmbeddedBook,
 }
 
-impl skim::SkimItem for Book {
-    fn text(&self) -> skim::prelude::Cow<str> {
-        skim::prelude::Cow::from(self.to_string())
-    }
-    fn display(&self, _: skim::DisplayContext) -> skim::AnsiString {
+struct Row(Book);
+
+impl ToString for Row {
+    fn to_string(&self) -> String {
         use strum::EnumMessage;
-        format!("{: <16} {}", self, self.get_documentation().unwrap()).into()
+        format!("{: <16} {}", self.0, self.0.get_documentation().unwrap()).into()
     }
 }
 
@@ -181,11 +180,17 @@ impl Options {
             }
         } else {
             if self.book.is_none() && !self.all {
+                use dialoguer::console::Term;
+                use dialoguer::{theme::ColorfulTheme, Select};
                 use strum::IntoEnumIterator;
-                if let Some(book) = select_one(Book::iter()) {
-                    self.book = Some(book.text().to_string().parse()?);
-                } else {
-                    return Ok(());
+                let books: Vec<Row> = Book::iter().map(|x| Row(x)).collect();
+                let selection = Select::with_theme(&ColorfulTheme::default())
+                    .items(&books)
+                    .default(0)
+                    .interact_on_opt(&Term::stderr())?;
+                match selection {
+                    Some(index) => self.book = Some(books[index].0),
+                    None => return Ok(()),
                 }
             }
             log::info!("Serving rust doc on {}", &self.url());
@@ -193,35 +198,4 @@ impl Options {
             lib::serve_rustbook(&self.addr()).await?
         })
     }
-}
-
-/// select one from an iterator of SkimItem
-///
-/// <https://github.com/DanSnow/github-release-download/blob/99d876ca3acc869d13e3dda0c0558cef6ad4acc5/src/bin/grd.rs>
-use std::sync::Arc;
-pub fn select_one<T: skim::SkimItem, I: IntoIterator<Item = T>>(
-    items: I,
-) -> Option<Arc<dyn skim::SkimItem>> {
-    let items = items
-        .into_iter()
-        .map(|x| Arc::new(x) as Arc<dyn skim::SkimItem>)
-        .collect::<Vec<Arc<dyn skim::SkimItem>>>();
-    let (tx, rx) = skim::prelude::bounded(32);
-    std::thread::spawn(move || {
-        for item in items {
-            if tx.send(item).is_err() {
-                break;
-            }
-        }
-    });
-    let items = skim::Skim::run_with(&skim::SkimOptions::default(), Some(rx));
-    if let Some(ref inner) = items {
-        if inner.is_abort {
-            return None;
-        }
-    }
-    let items = items
-        .map(|output| output.selected_items)
-        .unwrap_or_else(Vec::new);
-    items.into_iter().next()
 }
