@@ -15,6 +15,9 @@ pub struct Options {
     #[clap(short = 'r', long)]
     /// Use random port
     random_port: bool,
+    #[clap(short = 's', long, name = "ITEM")]
+    /// Search for item
+    search: Option<String>,
     #[clap(short = 'o', long)]
     /// Open in browser
     open: bool,
@@ -37,14 +40,25 @@ impl Options {
     fn url(&self) -> String {
         format!("http://{}", self.hostport())
     }
+    fn link(&self) -> String {
+        if self.search.is_none() {
+            format!("{}", self.url())
+        } else {
+            format!(
+                "{}/std/?search={}",
+                self.url(),
+                self.search.as_ref().unwrap()
+            )
+        }
+    }
     fn addr(&self) -> std::net::SocketAddr {
         self.hostport().parse().unwrap()
     }
     fn open(&self) -> Result<(), anyhow::Error> {
-        if self.open {
-            self.open_browser(self.url())?
-        }
-        Ok(())
+        Ok(if self.open {
+            println!("Opening {}", self.link());
+            self.open_browser(self.link())?
+        })
     }
     fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
         Ok(opener::open_browser(path)?)

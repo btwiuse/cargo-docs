@@ -42,16 +42,25 @@ $ cargo install cargo-docs
 ## Examples
 
 Serve crate doc on random port and open in browser  
-If you are on WSL2, set `BROWSER=explorer.exe` environment variable to open in desktop browser
+If you are on WSL2, set `BROWSER=/mnt/c/Path/To/Your/Browser.exe` environment variable to open in desktop browser
 ```
 $ cargo docs -ro
-Serving crate doc on http://127.0.0.1:38501
+Serving crate doc on http://127.0.0.1:45669
+Opening http://127.0.0.1:45669
 ```
 
 Serve rust doc (effectively the same as [cargo-book](https://crates.io/crates/cargo-book)) on random port and open in browser
 ```
-$ cargo docs -rob
-Serving rust doc on http://127.0.0.1:38957
+$ cargo docs -bro
+Serving rust doc on http://127.0.0.1:46661
+Opening http://127.0.0.1:46661
+```
+
+Search for `SocketAddr` in rust std doc served on random port and open it in browser
+```
+$ cargo docs -bros SocketAddr
+Serving rust doc on http://127.0.0.1:40143
+Opening http://127.0.0.1:40143/std/?search=SocketAddr
 ```
 
 Passthrough `cargo doc` options after --

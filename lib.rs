@@ -44,10 +44,15 @@ pub async fn handle_crate_request<B>(
     static_: Static,
     crate_name: String,
 ) -> Result<Response<Body>, std::io::Error> {
+    let target = if let Some(query) = req.uri().query() {
+        format!("/{crate_name}/?{query}")
+    } else {
+        format!("/{crate_name}/")
+    };
     match req.uri().path() {
         "/" => Ok(ResponseBuilder::new()
             .status(StatusCode::FOUND)
-            .header(header::LOCATION, format!("/{}/", crate_name))
+            .header(header::LOCATION, target)
             .body(Body::empty())
             .expect("unable to build response")),
         _ => static_.clone().serve(req).await,
