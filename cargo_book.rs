@@ -115,11 +115,11 @@ impl Options {
         format!("http://{}", self.hostport())
     }
     fn book_link(&self) -> String {
-        if let Some(book) = self.book.clone() {
-            if book == Book::Rustlings {
+        if let Some(ref book) = self.book {
+            if *book == Book::Rustlings {
                 return "https://github.com/rust-lang/rustlings".to_string();
             }
-            if book == Book::RustDevGuide {
+            if *book == Book::RustDevGuide {
                 return "https://rustc-dev-guide.rust-lang.org".to_string();
             }
             if self.search.is_none() {
