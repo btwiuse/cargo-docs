@@ -2,8 +2,17 @@
 mod lib;
 
 #[derive(clap::Parser)]
+#[clap(
+    author,
+    version,
+    about,
+    long_about = None
+)]
 pub struct Options {
-    #[clap(short = 'l', long)]
+    #[clap(long)]
+    /// List available books
+    list: bool,
+    #[clap(long)]
     /// Show rustdoc location then exit
     locate: bool,
     #[clap(long, env = "HOST", default_value = "127.0.0.1")]
@@ -21,6 +30,61 @@ pub struct Options {
     #[clap(short = 'o', long, env = "CARGO_BOOK_OPEN")]
     /// Open in browser
     open: bool,
+    /// Book to read, use `--list` to see available books
+    book: Option<Book>,
+}
+
+#[derive(
+    Copy,
+    Clone,
+    Debug,
+    PartialEq,
+    clap::Parser,
+    strum::EnumVariantNames,
+    strum::EnumString,
+    strum::Display,
+    strum::EnumMessage,
+)]
+enum Book {
+    /// [Learn Rust] The Rust Programming Language
+    #[strum(serialize = "rust")]
+    Rust,
+    /// [Learn Rust] Rust By Example
+    #[strum(serialize = "rust-by-example")]
+    RustByExample,
+    /// [Learn Rust] Rustlings <https://github.com/rust-lang/rustlings>
+    #[strum(serialize = "rustlings")]
+    Rustlings,
+    /// [Use Rust] The Standard Library
+    #[strum(serialize = "std")]
+    Std,
+    /// [Use Rust] The Edition Guide
+    #[strum(serialize = "edition-guide")]
+    EditionGuide,
+    /// [Use Rust] The Rustc Book
+    #[strum(serialize = "rustc")]
+    Rustc,
+    /// [Use Rust] The Cargo Book
+    #[strum(serialize = "cargo")]
+    Cargo,
+    /// [Use Rust] The Rustdoc Book
+    #[strum(serialize = "rustdoc")]
+    Rustdoc,
+    /// [Master Rust] The Reference
+    #[strum(serialize = "reference")]
+    Reference,
+    /// [Master Rust] The Rustonomicon
+    #[strum(serialize = "nomicon")]
+    Nomicon,
+    /// [Master Rust] The Unstable Book
+    #[strum(serialize = "unstable-book")]
+    UnstableBook,
+    /// [Master Rust] The Rustc Contribution Guide <https://rustc-dev-guide.rust-lang.org>
+    #[strum(serialize = "rust-dev-guide")]
+    RustDevGuide,
+    /// [Specialize Rust] The Embedded Rust Book
+    #[strum(serialize = "embedded-book")]
+    EmbeddedBook,
 }
 
 impl Options {
@@ -40,6 +104,27 @@ impl Options {
     fn url(&self) -> String {
         format!("http://{}", self.hostport())
     }
+    fn book_link(&self) -> String {
+        if let Some(book) = self.book.clone() {
+            if book == Book::Rustlings {
+                return "https://github.com/rust-lang/rustlings".to_string();
+            }
+            if book == Book::RustDevGuide {
+                return "https://rustc-dev-guide.rust-lang.org".to_string();
+            }
+            if self.search.is_none() {
+                format!("{}/{book}", self.url())
+            } else {
+                format!(
+                    "{}/{book}/?search={}",
+                    self.url(),
+                    self.search.as_ref().unwrap()
+                )
+            }
+        } else {
+            self.link()
+        }
+    }
     fn link(&self) -> String {
         if self.search.is_none() {
             format!("{}", self.url())
@@ -56,8 +141,9 @@ impl Options {
     }
     fn open(&self) -> Result<(), anyhow::Error> {
         Ok(if self.open {
-            println!("Opening {}", self.link());
-            self.open_browser(self.link())?
+            let link = self.book_link();
+            println!("Opening {link}");
+            self.open_browser(link)?
         })
     }
     fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
@@ -73,7 +159,14 @@ impl Options {
                 .into_os_string()
                 .into_string()
                 .unwrap();
-            println!("{}", dir)
+            println!("{dir}")
+        } else if self.list {
+            use strum::EnumMessage;
+            use strum::VariantNames;
+            for book_id in Book::VARIANTS.iter() {
+                let book = book_id.parse::<Book>()?;
+                println!("{: <16} {}", book_id, book.get_documentation().unwrap());
+            }
         } else {
             println!("Serving rust doc on {}", &self.url());
             self.open()?;
