@@ -42,7 +42,6 @@ $ cargo install cargo-docs
 ## Examples
 
 Serve crate doc on random port and open in browser  
-If you are on WSL2, set `BROWSER=/mnt/c/Path/To/Your/Browser.exe` environment variable to open in desktop browser
 ```
 $ cargo docs -ro
 Serving crate doc on http://127.0.0.1:45669
@@ -63,26 +62,22 @@ Serving rust doc on http://127.0.0.1:40143
 Opening http://127.0.0.1:40143/std/?search=SocketAddr
 ```
 
+## Pro Tips
+
 Passthrough `cargo doc` options after --
 ```
-$ cargo docs -p 8080 -- --quiet
+$ cargo docs -- --quiet
+Running cargo doc --quiet
 Serving crate doc on http://127.0.0.1:8080
 ```
 
-Set host, port using `HOST`, `PORT` environment variable
+If you are on WSL2, set `BROWSER=/mnt/c/Path/To/Your/Browser.exe` environment variable to open in desktop browser
 ```
-$ HOST=0.0.0.0 PORT=3333 cargo docs
-Serving crate doc on http://0.0.0.0:3333
-```
-
-Serve current directory content on 0.0.0.0:8910 (listing is not supported yet)
-```
-$ cargo docs -d . --host 0.0.0.0 --port 8910
-Serving . on http://0.0.0.0:8910
+$ export BROWSER="/mnt/c/Program Files/Firefox Nightly/firefox.exe"
 ```
 
-Serve files under ./target/doc
+Tired of typing `-o`, `-ro`? Set these environment variables to save you some key strokes.
 ```
-$ DIR=./target/doc cargo docs
-Serving ./target/doc on http://127.0.0.1:8080
+$ export CARGO_DOCS_OPEN=1
+$ export CARGO_DOCS_RANDOM_PORT=1
 ```

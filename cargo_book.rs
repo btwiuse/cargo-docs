@@ -12,13 +12,13 @@ pub struct Options {
     #[clap(short = 'p', long, env = "PORT", default_value = "8080")]
     /// Set listening port
     port: String,
-    #[clap(short = 'r', long)]
+    #[clap(short = 'r', long, env = "CARGO_BOOK_RANDOM_PORT")]
     /// Use random port
     random_port: bool,
     #[clap(short = 's', long, name = "ITEM")]
     /// Search for item
     search: Option<String>,
-    #[clap(short = 'o', long)]
+    #[clap(short = 'o', long, env = "CARGO_BOOK_OPEN")]
     /// Open in browser
     open: bool,
 }

@@ -11,7 +11,7 @@ pub struct Options {
     #[clap(short = 'p', long, env = "PORT", default_value = "8080")]
     /// Set port
     port: String,
-    #[clap(short = 'r', long)]
+    #[clap(short = 'r', long, env = "CARGO_DOCS_RANDOM_PORT")]
     /// Use random port
     random_port: bool,
     #[clap(short = 's', long, name = "ITEM")]
@@ -23,10 +23,10 @@ pub struct Options {
     #[clap(short = 'c', long, default_value = "Cargo.toml")]
     /// Crate manifest path.
     manifest_path: String,
-    #[clap(short = 'w', long)]
+    #[clap(short = 'w', long, env = "CARGO_DOCS_WATCH")]
     /// Re-generate doc on change TODO: unimplemented
     watch: bool,
-    #[clap(short = 'o', long)]
+    #[clap(short = 'o', long, env = "CARGO_DOCS_OPEN")]
     /// Open in browser
     open: bool,
     #[clap(short = 'b', long)]
