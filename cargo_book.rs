@@ -10,6 +10,9 @@ mod lib;
 )]
 pub struct Options {
     #[clap(long)]
+    /// Select a book interactively
+    skim: bool,
+    #[clap(long)]
     /// List available books
     list: bool,
     #[clap(long)]
@@ -30,7 +33,7 @@ pub struct Options {
     #[clap(short = 'o', long, env = "CARGO_BOOK_OPEN")]
     /// Open in browser
     open: bool,
-    /// Book to read, use `--list` to see available books
+    /// Book to read, use `--list` or `--skim` to see available books
     book: Option<Book>,
 }
 
@@ -85,6 +88,16 @@ enum Book {
     /// [Specialize Rust] The Embedded Rust Book
     #[strum(serialize = "embedded-book")]
     EmbeddedBook,
+}
+
+impl skim::SkimItem for Book {
+    fn text(&self) -> skim::prelude::Cow<str> {
+        skim::prelude::Cow::from(self.to_string())
+    }
+    fn display(&self, _: skim::DisplayContext) -> skim::AnsiString {
+        use strum::EnumMessage;
+        format!("{: <16} {}", self, self.get_documentation().unwrap()).into()
+    }
 }
 
 impl Options {
@@ -167,9 +180,48 @@ impl Options {
                 println!("{: <16} {}", book, book.get_documentation().unwrap());
             }
         } else {
+            if self.skim {
+                use strum::IntoEnumIterator;
+                if let Some(book) = select_one(Book::iter()) {
+                    self.book = Some(book.text().to_string().parse()?);
+                } else {
+                    return Ok(());
+                }
+            }
             println!("Serving rust doc on {}", &self.url());
             self.open()?;
             lib::serve_rustbook(&self.addr()).await?
         })
     }
+}
+
+/// select one from an iterator of SkimItem
+///
+/// <https://github.com/DanSnow/github-release-download/blob/99d876ca3acc869d13e3dda0c0558cef6ad4acc5/src/bin/grd.rs>
+use std::sync::Arc;
+pub fn select_one<T: skim::SkimItem, I: IntoIterator<Item = T>>(
+    items: I,
+) -> Option<Arc<dyn skim::SkimItem>> {
+    let items = items
+        .into_iter()
+        .map(|x| Arc::new(x) as Arc<dyn skim::SkimItem>)
+        .collect::<Vec<Arc<dyn skim::SkimItem>>>();
+    let (tx, rx) = skim::prelude::bounded(32);
+    std::thread::spawn(move || {
+        for item in items {
+            if tx.send(item).is_err() {
+                break;
+            }
+        }
+    });
+    let items = skim::Skim::run_with(&skim::SkimOptions::default(), Some(rx));
+    if let Some(ref inner) = items {
+        if inner.is_abort {
+            return None;
+        }
+    }
+    let items = items
+        .map(|output| output.selected_items)
+        .unwrap_or_else(Vec::new);
+    items.into_iter().next()
 }
