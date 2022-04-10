@@ -4,6 +4,7 @@ mod cargo_docs;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
+#[clap(bin_name = "cargo")]
 struct Executable {
     #[clap(subcommand)]
     command: Command,
