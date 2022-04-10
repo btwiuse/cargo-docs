@@ -102,7 +102,9 @@ impl Options {
                 let _msg = rx.recv().await;
                 // tokio::time::sleep(tokio::time::Duration::new(1, 0)).await;
                 // log::info!("Updating");
-                lib::run_cargo_doc(&extra_args).await;
+                if lib::run_cargo_doc(&extra_args).await.success() {
+                    // trigger browser reload
+                }
             }
         });
         // signal emitter

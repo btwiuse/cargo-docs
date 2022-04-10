@@ -9,7 +9,9 @@ A cargo plugin for serving rust and crate doc locally.
 
 ```
 $ cargo docs --help
-cargo-docs-docs
+cargo-docs-docs 0.1.18
+Btwiuse Arch <btwiuse@gmail.com>
+A cargo plugin for serving rust and crate doc locally.
 
 USAGE:
     cargo-docs docs [OPTIONS] [EXTRA_ARGS]...
@@ -23,10 +25,12 @@ OPTIONS:
     -d, --dir <DIR>                        Serve directory content [env: DIR=]
     -h, --help                             Print help information
         --host <HOST>                      Set host [env: HOST=] [default: 127.0.0.1]
-    -o, --open                             Open in browser
+    -o, --open                             Open in browser [env: CARGO_DOCS_OPEN=1]
     -p, --port <PORT>                      Set port [env: PORT=] [default: 8080]
-    -r, --random-port                      Use random port
-    -w, --watch                            Re-generate doc on change
+    -r, --random-port                      Use random port [env: CARGO_DOCS_RANDOM_PORT=1]
+    -s, --search <ITEM>                    Search for item
+    -V, --version                          Print version information
+    -w, --watch                            Re-generate doc on change [env: CARGO_DOCS_WATCH=]
 ```
 
 By default, it will call `cargo doc` to build crate doc and start a local server.
