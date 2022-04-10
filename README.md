@@ -26,7 +26,7 @@ OPTIONS:
     -o, --open                             Open in browser
     -p, --port <PORT>                      Set port [env: PORT=] [default: 8080]
     -r, --random-port                      Use random port
-    -w, --watch                            Re-generate doc on change TODO: unimplemented
+    -w, --watch                            Re-generate doc on change
 ```
 
 By default, it will call `cargo doc` to build crate doc and start a local server.
@@ -44,22 +44,30 @@ $ cargo install cargo-docs
 Serve crate doc on random port and open in browser  
 ```
 $ cargo docs -ro
-Serving crate doc on http://127.0.0.1:45669
-Opening http://127.0.0.1:45669
+[INFO] Serving crate doc on http://127.0.0.1:45669
+[INFO] Opening http://127.0.0.1:45669
 ```
 
-Serve rust doc (effectively the same as [cargo-book](https://crates.io/crates/cargo-book)) on random port and open in browser
+Same as above plus automatically rebuild and reload on file changes.
+```
+$ cargo docs -row
+[INFO] Listening for changes...
+[INFO] Serving crate doc on http://127.0.0.1:45669
+[INFO] Opening http://127.0.0.1:45669
+```
+
+Serve rust docs instead (roughly the same as [`cargo-book`](https://crates.io/crates/cargo-book))
 ```
 $ cargo docs -bro
-Serving rust doc on http://127.0.0.1:46661
-Opening http://127.0.0.1:46661
+[INFO] Serving rust doc on http://127.0.0.1:46661
+[INFO] Opening http://127.0.0.1:46661
 ```
 
 Search for `SocketAddr` in rust std doc served on random port and open it in browser
 ```
 $ cargo docs -bros SocketAddr
-Serving rust doc on http://127.0.0.1:40143
-Opening http://127.0.0.1:40143/std/?search=SocketAddr
+[INFO] Serving rust doc on http://127.0.0.1:40143
+[INFO] Opening http://127.0.0.1:40143/std/?search=SocketAddr
 ```
 
 ## Pro Tips
@@ -67,8 +75,8 @@ Opening http://127.0.0.1:40143/std/?search=SocketAddr
 Passthrough `cargo doc` options after --
 ```
 $ cargo docs -- --quiet
-Running cargo doc --quiet
-Serving crate doc on http://127.0.0.1:8080
+[INFO] Running cargo doc --quiet
+[INFO] Serving crate doc on http://127.0.0.1:8080
 ```
 
 If you are on WSL2, set `BROWSER=/mnt/c/Path/To/Your/Browser.exe` environment variable to open in desktop browser
@@ -76,8 +84,9 @@ If you are on WSL2, set `BROWSER=/mnt/c/Path/To/Your/Browser.exe` environment va
 $ export BROWSER="/mnt/c/Program Files/Firefox Nightly/firefox.exe"
 ```
 
-Tired of typing `-o`, `-ro`? Set these environment variables to save you some key strokes.
+Tired of typing `-o`, `-ro`, `-row`? Try these environment variables to save you some key strokes.
 ```
 $ export CARGO_DOCS_OPEN=1
+$ export CARGO_DOCS_WATCH=1
 $ export CARGO_DOCS_RANDOM_PORT=1
 ```

@@ -24,7 +24,7 @@ pub struct Options {
     /// Crate manifest path.
     manifest_path: String,
     #[clap(short = 'w', long, env = "CARGO_DOCS_WATCH")]
-    /// Re-generate doc on change TODO: unimplemented
+    /// Re-generate doc on change
     watch: bool,
     #[clap(short = 'o', long, env = "CARGO_DOCS_OPEN")]
     /// Open in browser
@@ -79,14 +79,41 @@ impl Options {
         manifest_path
     }
     fn open(&self) -> Result<(), anyhow::Error> {
-        if self.open {
-            log::info!("Opening {}", self.link());
-            self.open_browser(self.link())?
+        if !self.open {
+            return Ok(());
         }
-        Ok(())
+        log::info!("Opening {}", self.link());
+        Ok(self.open_browser(self.link())?)
     }
     fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
         Ok(opener::open_browser(path)?)
+    }
+    fn watch(&self) -> Result<(), anyhow::Error> {
+        if !self.watch {
+            return Ok(());
+        }
+        log::info!("Listening for changes...");
+        let (tx, mut rx) = tokio::sync::mpsc::channel(32);
+        // signal listener
+        let extra_args = self.extra_args.clone();
+        tokio::spawn(async move {
+            // let _ = lib::get_crate_info(&self.manifest_path());
+            loop {
+                let _msg = rx.recv().await;
+                // tokio::time::sleep(tokio::time::Duration::new(1, 0)).await;
+                // log::info!("Updating");
+                lib::run_cargo_doc(&extra_args).await;
+            }
+        });
+        // signal emitter
+        tokio::spawn(async move {
+            // let _ = lib::get_crate_info(&self.manifest_path());
+            loop {
+                tokio::time::sleep(tokio::time::Duration::new(5, 0)).await;
+                tx.send(1).await.unwrap();
+            }
+        });
+        Ok(())
     }
     pub async fn run(&mut self) -> Result<(), anyhow::Error> {
         if self.random_port {
@@ -104,9 +131,12 @@ impl Options {
             lib::serve_rust_doc(&self.addr()).await?
         } else {
             let content = "crate doc";
-            lib::run_cargo_doc(&self.extra_args);
-            log::info!("Serving {content} on {url}");
+            if !lib::run_cargo_doc(&self.extra_args).await.success() {
+                return Err(anyhow::anyhow!("failed to run cargo doc"));
+            }
+            self.watch()?;
             self.open()?;
+            log::info!("Serving {content} on {url}");
             lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
         })
     }

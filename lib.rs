@@ -16,23 +16,27 @@ use std::sync::Arc;
 
 /// run `cargo doc` with extra args
 #[allow(dead_code)]
-pub fn run_cargo_doc(args: &Vec<String>) {
-    let mut cmd = std::process::Command::new("cargo");
+pub async fn run_cargo_doc(args: &Vec<String>) -> std::process::ExitStatus {
+    // std::io::Result<> {
+    // async fn main() ->  {
+    let mut cmd = tokio::process::Command::new("cargo");
     cmd.arg("doc").args(args);
+    let stdcmd = cmd.as_std();
     log::info!(
         "Running {} {}",
-        cmd.get_program().to_string_lossy(),
-        cmd.get_args()
+        stdcmd.get_program().to_string_lossy(),
+        stdcmd
+            .get_args()
             .map(|s| s.to_string_lossy().to_string())
             .collect::<Vec<String>>()
             .join(" ")
     );
-    let mut child = std::process::Command::new("cargo")
+    let mut child = tokio::process::Command::new("cargo")
         .arg("doc")
         .args(args)
         .spawn()
         .expect("failed to run `cargo doc`");
-    child.wait().expect("failed to wait");
+    child.wait().await.expect("failed to wait")
 }
 
 /// handle crate doc request with redirect on `/`
@@ -65,12 +69,9 @@ pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::E
     Ok(serve_rustbook(addr).await?)
 }
 
-/// serve crate doc on `addr`
+/// get crate info
 #[allow(dead_code)]
-pub async fn serve_crate_doc(
-    manifest_path: &PathBuf,
-    addr: &std::net::SocketAddr,
-) -> Result<(), anyhow::Error> {
+pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyhow::Error> {
     let mut shell = Shell::default();
     shell.set_verbosity(Verbosity::Quiet);
     let cwd = std::env::current_dir().unwrap();
@@ -116,7 +117,16 @@ pub async fn serve_crate_doc(
     let crate_name = root_crate_names
         .get(0)
         .ok_or_else(|| anyhow::anyhow!("no crates with documentation"))?;
+    Ok((crate_name.to_string(), crate_doc_dir))
+}
 
+/// serve crate doc on `addr`
+#[allow(dead_code)]
+pub async fn serve_crate_doc(
+    manifest_path: &PathBuf,
+    addr: &std::net::SocketAddr,
+) -> Result<(), anyhow::Error> {
+    let (crate_name, crate_doc_dir) = get_crate_info(manifest_path)?;
     let handler = make_service_fn(|_| {
         let crate_doc_dir = Static::new(crate_doc_dir.clone());
         let crate_name = crate_name.clone();
