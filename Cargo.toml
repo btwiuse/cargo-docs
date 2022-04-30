@@ -11,6 +11,7 @@ repository = "https://github.com/btwiuse/cargo-docs"
 readme = "README.md"
 categories = ["development-tools::cargo-plugins"]
 license = "MIT"
+default-run = "cargo-docs"
 
 [lib]
 path = "lib.rs"
