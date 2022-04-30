@@ -44,8 +44,7 @@ impl Options {
         self.port.clone()
     }
     fn get_port(&self) -> std::io::Result<u16> {
-        let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
-        Ok(listener.local_addr()?.port())
+        Ok(port_selector::random_free_tcp_port().expect("Error allocating free port"))
     }
     fn hostport(&self) -> String {
         format!("{}:{}", self.host(), self.port())
@@ -119,7 +118,7 @@ impl Options {
     }
     pub async fn run(&mut self) -> Result<(), anyhow::Error> {
         if self.random_port {
-            self.port = format!("{}", self.get_port().unwrap());
+            self.port = format!("{}", self.get_port()?);
         }
         let url = self.url();
         Ok(if let Some(dir) = self.dir.clone() {

@@ -74,8 +74,8 @@ pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::E
 pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyhow::Error> {
     let mut shell = Shell::default();
     shell.set_verbosity(Verbosity::Quiet);
-    let cwd = std::env::current_dir().unwrap();
-    let cargo_home_dir = homedir(&cwd).unwrap();
+    let cwd = std::env::current_dir()?;
+    let cargo_home_dir = homedir(&cwd).expect("Errror locating homedir");
     let config = Config::new(shell, cwd, cargo_home_dir);
     let workspace = Workspace::new(manifest_path, &config).expect("Error making workspace");
 
@@ -148,9 +148,9 @@ pub fn find_rustdoc() -> Option<PathBuf> {
         .arg("which")
         .arg("rustdoc")
         .output()
-        .unwrap();
+        .ok()?;
     if output.status.success() {
-        Some(PathBuf::from(String::from_utf8(output.stdout).unwrap()))
+        Some(PathBuf::from(String::from_utf8(output.stdout).ok()?))
     } else {
         None
     }
@@ -181,7 +181,7 @@ pub async fn handle_request<B>(
 /// serve rust book on `addr`
 #[allow(dead_code)]
 pub async fn serve_rustbook(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
-    let rustdoc_dir = find_rustdoc().unwrap();
+    let rustdoc_dir = find_rustdoc().expect("Error locating rustdoc");
     Ok(serve_dir(&rustdoc_dir, addr).await?)
 }
 
