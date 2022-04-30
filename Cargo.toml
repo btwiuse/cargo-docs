@@ -40,6 +40,7 @@ strum = { version = "0.24", features = ["derive"] }
 log = "0.4"
 lg = "0.1"
 dialoguer = "0.10"
+dump = "0.1"
 
 [badges]
 travis-ci = { repository = "btwiuse/cargo-docs", branch = "master" }
