@@ -135,8 +135,6 @@ pub async fn serve_crate_doc(
         }))
     });
 
-    // dump::dump!(handler);
-
     Ok(Server::bind(addr).serve(handler).await?)
 }
 

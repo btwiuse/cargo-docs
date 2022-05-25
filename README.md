@@ -8,7 +8,7 @@ cargo-docs
 A cargo plugin for serving rust and crate doc locally.
 
 ```
-cargo-docs 0.1.18
+cargo-docs 0.1.20
 Btwiuse Arch <btwiuse@gmail.com>
 A cargo plugin for serving rust and crate doc locally.
 
