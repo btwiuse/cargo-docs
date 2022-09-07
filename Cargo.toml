@@ -1,6 +1,6 @@
 [package]
 name = "cargo-docs"
-version = "0.1.21"
+version = "0.1.22"
 authors = [
   "Btwiuse Arch <btwiuse@gmail.com>",
 ]
