@@ -1,6 +1,6 @@
 [package]
 name = "cargo-docs"
-version = "0.1.22"
+version = "0.1.23"
 authors = [
   "Btwiuse Arch <btwiuse@gmail.com>",
 ]
@@ -26,7 +26,7 @@ path = "main.rs"
 
 [dependencies]
 anyhow = "1"
-cargo = "0.64"
+cargo = "0.65"
 cargo-util = "0.2"
 clap = { version = "3", features = ["derive", "env"] }
 dirs = "4"
