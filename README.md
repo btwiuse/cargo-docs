@@ -8,28 +8,24 @@ cargo-docs
 A cargo plugin for serving rust and crate doc locally.
 
 ```
-cargo-docs 0.1.20
-Btwiuse Arch <btwiuse@gmail.com>
-A cargo plugin for serving rust and crate doc locally.
+$ cargo docs --help
+Usage: cargo docs [OPTIONS] [EXTRA_ARGS]...
 
-USAGE:
-    cargo docs [OPTIONS] [EXTRA_ARGS]...
+Arguments:
+  [EXTRA_ARGS]...  Passthrough extra args to `cargo doc`
 
-ARGS:
-    <EXTRA_ARGS>...    Passthrough extra args to `cargo doc`
-
-OPTIONS:
-    -b, --book                             Serve rust book and std doc instead
-    -c, --manifest-path <MANIFEST_PATH>    Crate manifest path [default: Cargo.toml]
-    -d, --dir <DIR>                        Serve directory content [env: DIR=]
-    -h, --help                             Print help information
-        --host <HOST>                      Set host [env: HOST=] [default: 127.0.0.1]
-    -o, --open                             Open in browser [env: CARGO_DOCS_OPEN=1]
-    -p, --port <PORT>                      Set port [env: PORT=] [default: 8080]
-    -r, --random-port                      Use random port [env: CARGO_DOCS_RANDOM_PORT=1]
-    -s, --search <ITEM>                    Search for item
-    -V, --version                          Print version information
-    -w, --watch                            Re-generate doc on change [env: CARGO_DOCS_WATCH=]
+Options:
+      --host <HOST>                    Set host [env: HOST=] [default: 127.0.0.1]
+  -p, --port <PORT>                    Set port [env: PORT=] [default: 8080]
+  -r, --random-port                    Use random port [env: CARGO_DOCS_RANDOM_PORT=true]
+  -s, --search <ITEM>                  Search for item
+  -d, --dir <DIR>                      Serve directory content [env: DIR=]
+  -c, --manifest-path <MANIFEST_PATH>  Crate manifest path [default: Cargo.toml]
+  -w, --watch                          Re-generate doc on change [env: CARGO_DOCS_WATCH=]
+  -o, --open                           Open in browser [env: CARGO_DOCS_OPEN=true]
+  -b, --book                           Serve rust book and std doc instead
+  -h, --help                           Print help information
+  -V, --version                        Print version information
 ```
 
 By default, it will call `cargo doc` to build crate doc and start a local server.
@@ -89,7 +85,7 @@ $ export BROWSER="/mnt/c/Program Files/Firefox Nightly/firefox.exe"
 
 Tired of typing `-o`, `-ro`, `-row`? Try these environment variables to save you some key strokes.
 ```
-$ export CARGO_DOCS_OPEN=1
-$ export CARGO_DOCS_WATCH=1
-$ export CARGO_DOCS_RANDOM_PORT=1
+$ export CARGO_DOCS_OPEN=true
+$ export CARGO_DOCS_WATCH=true
+$ export CARGO_DOCS_RANDOM_PORT=true
 ```
