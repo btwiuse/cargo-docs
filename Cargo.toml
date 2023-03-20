@@ -29,7 +29,7 @@ anyhow = "1"
 cargo = "0.68"
 cargo-util = "0.2"
 clap = { version = "4", features = ["derive", "env"] }
-dirs = "4"
+dirs = "5"
 futures-util = "0.3"
 http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
