@@ -89,3 +89,10 @@ $ export CARGO_DOCS_OPEN=true
 $ export CARGO_DOCS_WATCH=true
 $ export CARGO_DOCS_RANDOM_PORT=true
 ```
+
+`cargo-book` relies on presence of the rust-docs component
+```
+$ rustup component add rust-docs
+```
+
+try in codespaces

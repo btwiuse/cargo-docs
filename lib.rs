@@ -31,12 +31,16 @@ pub async fn run_cargo_doc(args: &Vec<String>) -> std::process::ExitStatus {
             .collect::<Vec<String>>()
             .join(" ")
     );
-    let mut child = tokio::process::Command::new("cargo")
-        .arg("doc")
+    let mut child = tokio::process::Command::new("bash")
+        .arg("-c")
+        .arg("cargo doc; echo $?")
         .args(args)
         .spawn()
         .expect("failed to run `cargo doc`");
-    child.wait().await.expect("failed to wait")
+    println!("cargo doc {:?}", args);
+    let x = child.wait().await.unwrap(); // .expect("failed to wait");
+    println!("result: {}", x);
+    x
 }
 
 /// handle crate doc request with redirect on `/`
