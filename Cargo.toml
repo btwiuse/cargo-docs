@@ -35,7 +35,7 @@ http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
 hyper-staticfile = "0.9"
 tokio = { version = "1", features = ["full"] }
-opener = "0.5"
+opener = "0.6"
 strum = { version = "0.24", features = ["derive"] }
 log = "0.4"
 lg = "0.1"
