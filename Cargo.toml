@@ -39,7 +39,7 @@ opener = "0.6"
 strum = { version = "0.25", features = ["derive"] }
 log = "0.4"
 lg = "0.1"
-dialoguer = "0.10"
+dialoguer = "0.11"
 port-selector = "0.1"
 
 [badges]
