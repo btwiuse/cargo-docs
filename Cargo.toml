@@ -26,7 +26,7 @@ path = "main.rs"
 
 [dependencies]
 anyhow = "1"
-cargo = "0.73"
+cargo = "0.74"
 cargo-util = "0.2"
 clap = { version = "4", features = ["derive", "env"] }
 dirs = "5"
