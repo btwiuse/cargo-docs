@@ -4,15 +4,17 @@ use cargo::ops::{compile_with_exec, CompileOptions};
 use cargo::util::config::{homedir, Config};
 use cargo::util::errors::CargoResult;
 use cargo_util::ProcessBuilder;
-use futures_util::future;
 use http::response::Builder as ResponseBuilder;
 use http::{header, StatusCode};
-use hyper::server::Server;
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Request, Response};
+use hyper::server::conn::http1;
+use hyper::service::service_fn;
+use hyper::{Request, Response};
+use hyper_staticfile::Body;
 use hyper_staticfile::Static;
+use hyper_util::rt::tokio::TokioIo;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::net::TcpListener;
 
 /// run `cargo doc` with extra args
 #[allow(dead_code)]
@@ -57,7 +59,7 @@ pub async fn handle_crate_request<B>(
         "/" => Ok(ResponseBuilder::new()
             .status(StatusCode::FOUND)
             .header(header::LOCATION, target)
-            .body(Body::empty())
+            .body(Body::Empty)
             .expect("unable to build response")),
         _ => static_.clone().serve(req).await,
     }
@@ -127,15 +129,25 @@ pub async fn serve_crate_doc(
     addr: &std::net::SocketAddr,
 ) -> Result<(), anyhow::Error> {
     let (crate_name, crate_doc_dir) = get_crate_info(manifest_path)?;
-    let handler = make_service_fn(|_| {
-        let crate_doc_dir = Static::new(crate_doc_dir.clone());
-        let crate_name = crate_name.clone();
-        future::ok::<_, hyper::Error>(service_fn(move |req| {
-            handle_crate_request(req, crate_doc_dir.clone(), crate_name.clone())
-        }))
-    });
+    let crate_doc_dir = Static::new(crate_doc_dir.clone());
+    let crate_name = crate_name.clone();
+    let handler =
+        service_fn(move |req| handle_crate_request(req, crate_doc_dir.clone(), crate_name.clone()));
 
-    Ok(Server::bind(addr).serve(handler).await?)
+    let listener = TcpListener::bind(addr)
+        .await
+        .expect("Failed to create TCP listener");
+
+    loop {
+        let (tcp, _) = listener.accept().await?;
+        let io = TokioIo::new(tcp);
+        let service = handler.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
+                println!("Failed to serve connection: {:?}", err);
+            }
+        });
+    }
 }
 
 /// find rust book location
@@ -186,9 +198,21 @@ pub async fn serve_rustbook(addr: &std::net::SocketAddr) -> Result<(), anyhow::E
 /// serve `dir` on `addr`
 #[allow(dead_code)]
 pub async fn serve_dir(dir: &PathBuf, addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
-    let handler = make_service_fn(|_| {
-        let dir = Static::new(dir.clone());
-        future::ok::<_, hyper::Error>(service_fn(move |req| handle_request(req, dir.clone())))
-    });
-    Ok(Server::bind(addr).serve(handler).await?)
+    let dir = Static::new(dir.clone());
+    let handler = service_fn(move |req| handle_request(req, dir.clone()));
+
+    let listener = TcpListener::bind(addr)
+        .await
+        .expect("Failed to create TCP listener");
+
+    loop {
+        let (tcp, _) = listener.accept().await?;
+        let io = TokioIo::new(tcp);
+        let service = handler.clone();
+        tokio::task::spawn(async move {
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
+                println!("Failed to serve connection: {:?}", err);
+            }
+        });
+    }
 }
