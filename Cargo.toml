@@ -42,6 +42,11 @@ dialoguer = "0.11"
 port-selector = "0.1"
 hyper-util = { version = "0.1.1", features = ["full"] }
 
+[features]
+vendored-openssl = ["cargo/vendored-openssl"]
+vendored-libgit2 = ["cargo/vendored-libgit2"]
+all-static = ["cargo/all-static"]
+
 [badges]
 travis-ci = { repository = "btwiuse/cargo-docs", branch = "master" }
 maintenance = { status = "experimental" }
