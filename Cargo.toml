@@ -43,6 +43,7 @@ port-selector = "0.1"
 hyper-util = { version = "0.1.1", features = ["full"] }
 
 [features]
+default = ["all-static"]
 vendored-openssl = ["cargo/vendored-openssl"]
 vendored-libgit2 = ["cargo/vendored-libgit2"]
 all-static = ["cargo/all-static"]
