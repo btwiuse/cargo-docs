@@ -81,7 +81,7 @@ pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyh
     let config = Config::new(shell, cwd, cargo_home_dir);
     let workspace = Workspace::new(manifest_path, &config).expect("Error making workspace");
 
-    let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true })
+    let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true, json: false })
         .expect("Making CompileOptions");
 
     // set to Default, otherwise cargo will complain about virtual manifest:
