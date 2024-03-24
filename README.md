@@ -3,6 +3,7 @@ cargo-docs
 
 [![crates.io](https://img.shields.io/crates/v/cargo-docs.svg)](https://crates.io/crates/cargo-docs)
 [![Documentation](https://docs.rs/cargo-docs/badge.svg)](https://docs.rs/cargo-docs)
+[![Dependency Status](https://deps.rs/repo/github/btwiuse/cargo-docs/status.svg)](https://deps.rs/repo/github/btwiuse/cargo-docs)
 [![Build Status](https://travis-ci.org/btwiuse/cargo-docs.svg?branch=master)](https://travis-ci.org/btwiuse/cargo-docs)
 
 A cargo plugin for serving rust and crate doc locally.
