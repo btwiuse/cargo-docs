@@ -1,8 +1,8 @@
 use cargo::core::compiler::{CompileMode, Executor};
 use cargo::core::{PackageId, Shell, Target, Verbosity, Workspace};
 use cargo::ops::{compile_with_exec, CompileOptions};
-use cargo::util::config::{homedir, Config};
 use cargo::util::errors::CargoResult;
+use cargo::util::{homedir, GlobalContext};
 use cargo_util::ProcessBuilder;
 use http::response::Builder as ResponseBuilder;
 use http::{header, StatusCode};
@@ -78,11 +78,17 @@ pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyh
     shell.set_verbosity(Verbosity::Quiet);
     let cwd = std::env::current_dir()?;
     let cargo_home_dir = homedir(&cwd).expect("Errror locating homedir");
-    let config = Config::new(shell, cwd, cargo_home_dir);
+    let config = GlobalContext::new(shell, cwd, cargo_home_dir);
     let workspace = Workspace::new(manifest_path, &config).expect("Error making workspace");
 
-    let mut compile_opts = CompileOptions::new(&config, CompileMode::Doc { deps: true, json: false })
-        .expect("Making CompileOptions");
+    let mut compile_opts = CompileOptions::new(
+        &config,
+        CompileMode::Doc {
+            deps: true,
+            json: false,
+        },
+    )
+    .expect("Making CompileOptions");
 
     // set to Default, otherwise cargo will complain about virtual manifest:
     //
