@@ -26,7 +26,7 @@ path = "main.rs"
 
 [dependencies]
 anyhow = "1"
-cargo = "0.80.0"
+cargo = "0.81.0"
 cargo-util = "0.2.10"
 dialoguer = "0.11"
 futures-util = "0.3"
