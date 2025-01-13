@@ -1,0 +1,54 @@
+name: goreleaser
+
+on:
+  pull_request:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "v*"
+  workflow_dispatch:
+  repository_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  snapshot:
+    if: startsWith(github.ref, 'refs/tags/') != true
+    runs-on: ubuntu-latest
+    container:
+      image: btwiuse/arch:rust-goreleaser
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run GoReleaser Release
+        run: goreleaser release --snapshot --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    container:
+      image: btwiuse/arch:rust-goreleaser
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set safe.directory in container to make git happy
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run GoReleaser Release
+        run: goreleaser release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
