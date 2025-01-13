@@ -22,8 +22,6 @@ archives:
       - main
     files:
       - LICENSE
-    name_template: >-
-      {{ .ProjectName }}-{{- .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}
     format_overrides:
       - goos: windows
         format: zip
