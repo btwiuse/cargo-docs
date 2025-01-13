@@ -20,7 +20,8 @@ archives:
       - main
     files:
       - LICENSE
-    name_template: {{ .ProjectName }}-{{ .Target }}
+    name_template: >-
+      {{ .ProjectName }}-{{ .Target }}
     format_overrides:
       - goos: windows
         format: zip
