@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: btwiuse/arch:rust-goreleaser
+      workdir: /app
 
     steps:
       - name: Checkout
@@ -36,6 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: btwiuse/arch:rust-goreleaser
+      workdir: /app
 
     steps:
       - name: Checkout
