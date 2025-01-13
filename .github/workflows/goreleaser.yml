@@ -19,7 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: btwiuse/arch:rust-goreleaser
-      workdir: /app
 
     steps:
       - name: Checkout
@@ -33,17 +32,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-    if: startsWith(github.ref, 'refs/tags/v')
+  # if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     container:
       image: btwiuse/arch:rust-goreleaser
-      workdir: /app
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: probe
+        run: pwd && ls -la
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser Release
         run: goreleaser release --clean
