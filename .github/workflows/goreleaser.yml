@@ -43,6 +43,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: set safe dir
+        run: git config --global --add safe.directory . && git log
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: probe
         run: pwd && ls -la && whoami && id && printenv && git log
         env:
