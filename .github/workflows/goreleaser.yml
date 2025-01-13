@@ -44,7 +44,7 @@ jobs:
           fetch-depth: 0
 
       - name: probe
-        run: pwd && ls -la
+        run: pwd && ls -la && whoami && id && printenv
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
