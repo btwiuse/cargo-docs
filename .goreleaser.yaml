@@ -1,9 +1,26 @@
+# .goreleaser.yaml
+
+project_name: cargo-docs
+
 version: 2
 
 builds:
-  - builder: rust
+  - id: main
+    builder: rust
     tool: cargo
     command: zigbuild
     targets:
       - x86_64-unknown-linux-musl
       - aarch64-unknown-linux-musl
+
+archives:
+  - id: archive
+    builds:
+      - main
+    files:
+      - LICENSE
+    name_template: >-
+      {{ .ProjectName }}-{{- .Os }}-{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}
+    format_overrides:
+      - goos: windows
+        format: zip
