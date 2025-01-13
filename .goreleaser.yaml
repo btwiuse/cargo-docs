@@ -5,7 +5,17 @@ project_name: cargo-docs
 version: 2
 
 builds:
-  - id: main
+  - id: cargo-docs
+    binary: cargo-docs
+    builder: rust
+    tool: cargo
+    command: zigbuild
+    targets:
+      - aarch64-unknown-linux-musl
+      - x86_64-unknown-linux-musl
+      - x86_64-pc-windows-gnu
+  - id: cargo-book
+    binary: cargo-book
     builder: rust
     tool: cargo
     command: zigbuild
@@ -17,7 +27,8 @@ builds:
 archives:
   - id: archive
     builds:
-      - main
+      - cargo-docs
+      - cargo-book
     files:
       - LICENSE
     name_template: >-
