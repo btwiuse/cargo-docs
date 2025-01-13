@@ -32,7 +32,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   release:
-  # if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     container:
       image: btwiuse/arch:rust-goreleaser
@@ -43,13 +43,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: set safe dir
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE" && git log
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: probe
-        run: pwd && ls -la && whoami && id && printenv && git log
+      - name: Set safe.directory in container to make git happy
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
