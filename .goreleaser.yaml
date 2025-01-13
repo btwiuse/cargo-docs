@@ -32,7 +32,7 @@ archives:
     files:
       - LICENSE
     name_template: >-
-      {{ .ProjectName }}-{{ .Target }}
+      {{ .ProjectName }}-v{{ .Version }}-{{ .Target }}
     format_overrides:
       - goos: windows
         format: zip
