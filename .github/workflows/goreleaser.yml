@@ -50,6 +50,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
+          install-only: true
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
