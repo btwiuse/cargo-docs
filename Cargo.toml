@@ -39,7 +39,7 @@ lg = "0.1"
 log = "0.4"
 opener = "0.7"
 port-selector = "0.1"
-strum = { version = "0.26", features = ["derive"] }
+strum = { version = "0.27", features = ["derive"] }
 tokio = { version = "1.36", features = ["full"] }
 
 [features]
