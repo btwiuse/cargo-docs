@@ -37,7 +37,7 @@ hyper-staticfile = "0.10"
 hyper-util = { version = "0.1", features = ["full"] }
 lg = "0.1"
 log = "0.4"
-opener = "0.7"
+opener = "0.8"
 port-selector = "0.1"
 strum = { version = "0.27", features = ["derive"] }
 tokio = { version = "1.36", features = ["full"] }
