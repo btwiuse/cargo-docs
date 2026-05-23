@@ -1,4 +1,4 @@
-use cargo::core::compiler::{CompileMode, Executor};
+use cargo::core::compiler::{CompileMode, Executor, UserIntent};
 use cargo::core::{PackageId, Shell, Target, Verbosity, Workspace};
 use cargo::ops::{compile_with_exec, CompileOptions};
 use cargo::util::errors::CargoResult;
@@ -83,7 +83,7 @@ pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyh
 
     let mut compile_opts = CompileOptions::new(
         &config,
-        CompileMode::Doc {
+        UserIntent::Doc {
             deps: true,
             json: false,
         },
