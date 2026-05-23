@@ -92,10 +92,10 @@ enum Book {
 
 struct Row(Book);
 
-impl ToString for Row {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Row {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         use strum::EnumMessage;
-        format!("{: <16} {}", self.0, self.0.get_documentation().unwrap()).into()
+        write!(f, "{: <16} {}", self.0, self.0.get_documentation().unwrap())
     }
 }
 
