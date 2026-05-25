@@ -131,11 +131,18 @@ impl Options {
                         use notify::EventKind::*;
                         let affects_non_generated_path = ev.paths.is_empty()
                             || ev.paths.iter().any(|path| {
-                                path.strip_prefix(&watch_dir)
+                                let relative = path
+                                    .strip_prefix(&watch_dir)
                                     .ok()
                                     .and_then(|relative| relative.components().next())
                                     .map(|component| component.as_os_str() != "target")
-                                    .unwrap_or(true)
+                                    .unwrap_or(true);
+                                // Only rebuild on .rs file changes.
+                                relative
+                                    && path
+                                        .extension()
+                                        .map(|ext| ext == "rs")
+                                        .unwrap_or(false)
                             });
                         if matches!(ev.kind, Modify(_) | Create(_) | Remove(_))
                             && affects_non_generated_path
