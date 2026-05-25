@@ -2,6 +2,8 @@
 mod lib;
 
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 #[derive(clap::Parser)]
 pub struct Options {
@@ -87,33 +89,70 @@ impl Options {
     fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
         Ok(opener::open_browser(path)?)
     }
-    fn watch(&self) -> Result<(), anyhow::Error> {
+    fn watch(&self, build_id: Arc<AtomicU64>) -> Result<(), anyhow::Error> {
         if !self.watch {
             return Ok(());
         }
         log::info!("Listening for changes...");
-        let (tx, mut rx) = tokio::sync::mpsc::channel(32);
-        // signal listener
+
         let extra_args = self.extra_args.clone();
-        tokio::spawn(async move {
-            // let _ = lib::get_crate_info(&self.manifest_path());
-            loop {
-                let _msg = rx.recv().await;
-                // tokio::time::sleep(tokio::time::Duration::new(1, 0)).await;
-                // log::info!("Updating");
-                if lib::run_cargo_doc(&extra_args).await.success() {
-                    // trigger browser reload
+        let manifest_path = self.manifest_path();
+
+        // Determine the source directory to watch (the directory that contains
+        // the manifest, i.e. the crate root).
+        let watch_dir = manifest_path
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| std::env::current_dir().unwrap());
+
+        // Use a std channel so notify can send events from its own thread,
+        // and bridge into a tokio mpsc channel for the async rebuild task.
+        let (std_tx, std_rx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
+        let (tok_tx, mut tok_rx) = tokio::sync::mpsc::channel::<()>(8);
+
+        // File-system watcher thread – runs outside the async runtime.
+        let tok_tx_clone = tok_tx.clone();
+        std::thread::spawn(move || {
+            use notify::Watcher;
+            let mut watcher = match notify::recommended_watcher(std_tx) {
+                Ok(w) => w,
+                Err(e) => {
+                    log::error!("Failed to create file watcher: {e}");
+                    return;
+                }
+            };
+            if let Err(e) = watcher.watch(&watch_dir, notify::RecursiveMode::Recursive) {
+                log::error!("Failed to watch {}: {e}", watch_dir.display());
+                return;
+            }
+            for event in std_rx {
+                match event {
+                    Ok(ev) => {
+                        use notify::EventKind::*;
+                        if matches!(ev.kind, Modify(_) | Create(_) | Remove(_)) {
+                            let _ = tok_tx_clone.blocking_send(());
+                        }
+                    }
+                    Err(e) => log::warn!("Watch error: {e}"),
                 }
             }
         });
-        // signal emitter
+
+        // Async rebuild task – waits for change signals and runs `cargo doc`.
         tokio::spawn(async move {
-            // let _ = lib::get_crate_info(&self.manifest_path());
-            loop {
-                tokio::time::sleep(tokio::time::Duration::new(5, 0)).await;
-                tx.send(1).await.unwrap();
+            // Debounce: drain any queued-up signals before rebuilding.
+            while let Some(()) = tok_rx.recv().await {
+                // Drain additional events that arrived while we were rebuilding.
+                while tok_rx.try_recv().is_ok() {}
+
+                log::info!("Change detected – regenerating docs...");
+                if lib::run_cargo_doc(&extra_args).await.success() {
+                    build_id.fetch_add(1, Ordering::Relaxed);
+                    log::info!("Docs updated (build #{})", build_id.load(Ordering::Relaxed));
+                }
             }
         });
+
         Ok(())
     }
     pub async fn run(&mut self) -> Result<(), anyhow::Error> {
@@ -135,10 +174,15 @@ impl Options {
             if !lib::run_cargo_doc(&self.extra_args).await.success() {
                 return Err(anyhow::anyhow!("failed to run cargo doc"));
             }
-            self.watch()?;
+            let build_id = Arc::new(AtomicU64::new(0));
+            self.watch(Arc::clone(&build_id))?;
             self.open()?;
             log::info!("Serving {content} on {url}");
-            lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
+            if self.watch {
+                lib::serve_crate_doc_watch(&self.manifest_path(), &self.addr(), build_id).await?
+            } else {
+                lib::serve_crate_doc(&self.manifest_path(), &self.addr()).await?
+            }
         })
     }
 }

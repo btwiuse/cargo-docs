@@ -160,6 +160,67 @@ impl Options {
     fn open_browser<P: AsRef<std::ffi::OsStr>>(&self, path: P) -> Result<(), anyhow::Error> {
         Ok(opener::open_browser(path)?)
     }
+    /// Generate an HTML index page that lists all available books.
+    fn generate_index_html(&self) -> String {
+        use strum::EnumMessage;
+        use strum::IntoEnumIterator;
+
+        let base = self.url();
+        let rows: String = Book::iter()
+            .map(|book| {
+                let desc = book.get_documentation().unwrap_or_default();
+                // External books open directly in the browser; local books are
+                // served under /{book-name}/ by the static file server.
+                let href = match book {
+                    Book::Rustlings => {
+                        "https://github.com/rust-lang/rustlings".to_string()
+                    }
+                    Book::RustDevGuide => {
+                        "https://rustc-dev-guide.rust-lang.org".to_string()
+                    }
+                    _ => format!("{base}/{book}/"),
+                };
+                format!(
+                    r#"<tr><td><a href="{href}">{book}</a></td><td>{desc}</td></tr>"#,
+                    href = href,
+                    book = book,
+                    desc = desc,
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        format!(
+            r#"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rust Books Index</title>
+  <style>
+    body {{ font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }}
+    h1   {{ border-bottom: 1px solid #ccc; padding-bottom: .5rem; }}
+    table {{ border-collapse: collapse; width: 100%; }}
+    td, th {{ text-align: left; padding: .4rem .8rem; border-bottom: 1px solid #eee; }}
+    th {{ background: #f5f5f5; }}
+    a  {{ color: #0074d9; text-decoration: none; }}
+    a:hover {{ text-decoration: underline; }}
+  </style>
+</head>
+<body>
+  <h1>Rust Books</h1>
+  <table>
+    <thead><tr><th>Book</th><th>Description</th></tr></thead>
+    <tbody>
+{rows}
+    </tbody>
+  </table>
+</body>
+</html>
+"#,
+            rows = rows,
+        )
+    }
     pub async fn run(&mut self) -> Result<(), anyhow::Error> {
         if self.random_port {
             self.port = format!("{}", self.get_port()?);
@@ -177,8 +238,14 @@ impl Options {
             for book in Book::iter() {
                 println!("{: <16} {}", book, book.get_documentation().unwrap());
             }
+        } else if self.all {
+            // Serve all books with a generated index page at /.
+            let index_html = self.generate_index_html();
+            log::info!("Serving all rust books on {}", &self.url());
+            self.open()?;
+            lib::serve_rustbook_with_index(&self.addr(), index_html).await?
         } else {
-            if self.book.is_none() && !self.all {
+            if self.book.is_none() {
                 use dialoguer::console::Term;
                 use dialoguer::{theme::ColorfulTheme, Select};
                 use strum::IntoEnumIterator;
