@@ -25,6 +25,7 @@ Options:
   -w, --watch                          Re-generate doc on change [env: CARGO_DOCS_WATCH=]
   -o, --open                           Open in browser [env: CARGO_DOCS_OPEN=true]
   -b, --book                           Serve rust book and std doc instead
+  -Z <FLAG>                            Pass unstable flag to `cargo doc` (repeatable)
   -h, --help                           Print help information
   -V, --version                        Print version information
 ```
@@ -71,6 +72,11 @@ $ cargo docs -bros SocketAddr
 ```
 
 ## Pro Tips
+
+Pass unstable cargo flags directly (repeat `-Z` as needed)
+```
+$ cargo docs -Z unstable-options
+```
 
 Passthrough `cargo doc` options after --
 ```

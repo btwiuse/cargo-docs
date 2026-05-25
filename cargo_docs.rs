@@ -34,6 +34,9 @@ pub struct Options {
     #[clap(short = 'b', long)]
     /// Serve rust book and std doc instead
     book: bool,
+    #[clap(short = 'Z', value_name = "FLAG")]
+    /// Pass unstable flag to `cargo doc` (repeatable)
+    unstable_flags: Vec<String>,
     /// Passthrough extra args to `cargo doc`
     extra_args: Vec<String>,
 }
@@ -79,6 +82,15 @@ impl Options {
         }
         manifest_path
     }
+    fn cargo_doc_args(&self) -> Vec<String> {
+        let mut args = Vec::with_capacity(self.unstable_flags.len() * 2 + self.extra_args.len());
+        for flag in &self.unstable_flags {
+            args.push("-Z".to_owned());
+            args.push(flag.clone());
+        }
+        args.extend(self.extra_args.clone());
+        args
+    }
     fn open(&self) -> Result<(), anyhow::Error> {
         if !self.open {
             return Ok(());
@@ -95,7 +107,7 @@ impl Options {
         }
         log::info!("Listening for changes...");
 
-        let extra_args = self.extra_args.clone();
+        let cargo_doc_args = self.cargo_doc_args();
         let manifest_path = self.manifest_path();
 
         // Determine the source directory to watch (the directory that contains
@@ -167,7 +179,7 @@ impl Options {
                 while tok_rx.try_recv().is_ok() {}
 
                 log::info!("Change detected – regenerating docs...");
-                if lib::run_cargo_doc(&extra_args).await.success() {
+                if lib::run_cargo_doc(&cargo_doc_args).await.success() {
                     build_id.fetch_add(1, Ordering::Relaxed);
                     log::info!("Docs updated (build #{})", build_id.load(Ordering::Relaxed));
                 }
@@ -192,7 +204,7 @@ impl Options {
             lib::serve_rust_doc(&self.addr()).await?
         } else {
             let content = "crate doc";
-            if !lib::run_cargo_doc(&self.extra_args).await.success() {
+            if !lib::run_cargo_doc(&self.cargo_doc_args()).await.success() {
                 return Err(anyhow::anyhow!("failed to run cargo doc"));
             }
             let build_id = Arc::new(AtomicU64::new(0));
