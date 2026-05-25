@@ -129,7 +129,17 @@ impl Options {
                 match event {
                     Ok(ev) => {
                         use notify::EventKind::*;
-                        if matches!(ev.kind, Modify(_) | Create(_) | Remove(_)) {
+                        let affects_non_generated_path = ev.paths.is_empty()
+                            || ev.paths.iter().any(|path| {
+                                path.strip_prefix(&watch_dir)
+                                    .ok()
+                                    .and_then(|relative| relative.components().next())
+                                    .map(|component| component.as_os_str() != "target")
+                                    .unwrap_or(true)
+                            });
+                        if matches!(ev.kind, Modify(_) | Create(_) | Remove(_))
+                            && affects_non_generated_path
+                        {
                             let _ = tok_tx_clone.blocking_send(());
                         }
                     }
