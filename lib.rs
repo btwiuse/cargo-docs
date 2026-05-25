@@ -265,7 +265,7 @@ pub async fn serve_dir(dir: &PathBuf, addr: &std::net::SocketAddr) -> Result<(),
 ///
 /// Responds to `/_buildid` with the current build counter so the injected
 /// JavaScript can detect when a rebuild has completed and reload the page.
-/// HTML responses have [`RELOAD_SCRIPT`] injected before `</body>`.
+/// HTML responses have `RELOAD_SCRIPT` injected before `</body>`.
 #[allow(dead_code)]
 pub async fn handle_crate_request_watch<B>(
     req: Request<B>,
