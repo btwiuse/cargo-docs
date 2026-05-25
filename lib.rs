@@ -299,6 +299,26 @@ pub async fn handle_crate_request_watch<B>(
 
     let response = static_.clone().serve(req).await?;
 
+    let status = response.status();
+
+    // If the file is missing (e.g. during a rebuild), serve a minimal HTML page
+    // with the reload script so the browser keeps polling /_buildid and
+    // eventually reloads when the build completes. Without this the browser
+    // would land on a script-less 404 and never recover.
+    if status == StatusCode::NOT_FOUND {
+        let fallback = format!(
+            r#"<!DOCTYPE html><html><head><meta charset="utf-8"><title>Rebuilding…</title></head><body><p>Regenerating documentation…</p>{}</body></html>"#,
+            RELOAD_SCRIPT
+        );
+        let fallback_bytes = Bytes::from(fallback);
+        return Ok(ResponseBuilder::new()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
+            .header(header::CACHE_CONTROL, "no-cache, no-store")
+            .body(full_body(fallback_bytes))
+            .expect("unable to build response"));
+    }
+
     // Inject the live-reload script into HTML responses.
     let is_html = response
         .headers()
