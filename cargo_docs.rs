@@ -140,7 +140,11 @@ impl Options {
 
         // Async rebuild task – waits for change signals and runs `cargo doc`.
         tokio::spawn(async move {
-            // Debounce: drain any queued-up signals before rebuilding.
+            // Debounce: wait for the first change signal then drain any
+            // additional events that were queued while we were rebuilding.
+            // This prevents multiple consecutive rebuilds when many files
+            // change simultaneously (e.g. after a `git checkout` or a
+            // formatter run).
             while let Some(()) = tok_rx.recv().await {
                 // Drain additional events that arrived while we were rebuilding.
                 while tok_rx.try_recv().is_ok() {}

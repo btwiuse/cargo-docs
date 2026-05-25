@@ -316,9 +316,9 @@ pub async fn handle_crate_request_watch<B>(
             .to_bytes();
         let html = String::from_utf8_lossy(&bytes);
         let modified: String = if html.contains("</body>") {
-            html.replacen("</body>", &format!("{RELOAD_SCRIPT}</body>"), 1)
+            html.replacen("</body>", RELOAD_SCRIPT, 1) + "</body>"
         } else {
-            format!("{html}{RELOAD_SCRIPT}")
+            html.into_owned() + RELOAD_SCRIPT
         };
         let modified_bytes = Bytes::from(modified);
         parts.headers.insert(
@@ -363,7 +363,7 @@ pub async fn serve_crate_doc_watch(
         let service = handler.clone();
         tokio::task::spawn(async move {
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
-                println!("Failed to serve connection: {:?}", err);
+                log::error!("Failed to serve connection: {:?}", err);
             }
         });
     }
@@ -415,7 +415,7 @@ pub async fn serve_rustbook_with_index(
         let service = handler.clone();
         tokio::task::spawn(async move {
             if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
-                println!("Failed to serve connection: {:?}", err);
+                log::error!("Failed to serve connection: {:?}", err);
             }
         });
     }
