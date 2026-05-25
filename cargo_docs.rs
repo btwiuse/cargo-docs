@@ -88,7 +88,7 @@ impl Options {
             args.push("-Z".to_owned());
             args.push(flag.clone());
         }
-        args.extend(self.extra_args.clone());
+        args.extend(self.extra_args.iter().cloned());
         args
     }
     fn open(&self) -> Result<(), anyhow::Error> {
