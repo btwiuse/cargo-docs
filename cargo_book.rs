@@ -226,12 +226,9 @@ impl Options {
             self.port = format!("{}", self.get_port()?);
         }
         Ok(if self.locate {
-            let dir = lib::find_rustdoc()
-                .unwrap()
-                .into_os_string()
-                .into_string()
-                .unwrap();
-            println!("{dir}")
+            // `display` rather than `into_string`, so a path that is not valid
+            // UTF-8 prints like any other instead of aborting `--locate`.
+            println!("{}", lib::locate_rustdoc()?.display())
         } else if self.list {
             use strum::EnumMessage;
             use strum::IntoEnumIterator;
