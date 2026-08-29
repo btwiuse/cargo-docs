@@ -197,26 +197,51 @@ pub async fn serve_crate_doc(
 /// find rust book location
 ///
 /// Some("/home/aaron/.rustup/toolchains/nightly-2021-12-13-x86_64-unknown-linux-gnu/share/doc/rust/html")
+///
+/// The sysroot is asked of rustc rather than of rustup, so a toolchain
+/// installed by any means answers: a distribution package, a standalone
+/// tarball, nix. `rustup which rustdoc` answers only where rustup is on
+/// `PATH`, and returns nothing otherwise.
+///
+/// Under rustup nothing changes. Cargo exports `RUSTUP_TOOLCHAIN` to a custom
+/// subcommand and the rustc shim reads it, so a `+toolchain` still selects
+/// whose book is served.
 pub fn find_rustdoc() -> Option<PathBuf> {
-    let output = std::process::Command::new("rustup")
-        .arg("which")
-        .arg("rustdoc")
+    let rustc = std::env::var_os("RUSTC").unwrap_or_else(|| std::ffi::OsString::from("rustc"));
+    let output = std::process::Command::new(rustc)
+        .arg("--print")
+        .arg("sysroot")
         .output()
         .ok()?;
-    if output.status.success() {
-        Some(PathBuf::from(String::from_utf8(output.stdout).ok()?))
-    } else {
-        None
+
+    if !output.status.success() {
+        return None;
     }
-    .and_then(|rustdoc| {
-        Some(
-            rustdoc
-                .parent()?
-                .parent()?
-                .join("share")
-                .join("doc")
-                .join("rust")
-                .join("html"),
+
+    let sysroot = String::from_utf8(output.stdout).ok()?;
+    let html = PathBuf::from(sysroot.trim_end())
+        .join("share")
+        .join("doc")
+        .join("rust")
+        .join("html");
+
+    // A toolchain can exist without its documentation: rustup installs
+    // `rust-docs` as a separate component, and distributions package it apart
+    // from the compiler. So the miss is reported rather than served as an
+    // empty directory.
+    html.is_dir().then_some(html)
+}
+
+/// the rust book location, or why there is none to serve
+///
+/// Stated once here so every caller reports the same thing, rather than
+/// each panicking with a message that names the lookup instead of the fix.
+pub fn locate_rustdoc() -> Result<PathBuf, anyhow::Error> {
+    find_rustdoc().ok_or_else(|| {
+        anyhow::anyhow!(
+            "no rust documentation under `rustc --print sysroot`; \
+             install it with `rustup component add rust-docs`, or with \
+             whichever package carries it for this toolchain"
         )
     })
 }
@@ -235,7 +260,7 @@ pub async fn handle_request<B>(
 /// serve rust book on `addr`
 #[allow(dead_code)]
 pub async fn serve_rustbook(addr: &std::net::SocketAddr) -> Result<(), anyhow::Error> {
-    let rustdoc_dir = find_rustdoc().expect("Error locating rustdoc");
+    let rustdoc_dir = locate_rustdoc()?;
     Ok(serve_dir(&rustdoc_dir, addr).await?)
 }
 
@@ -418,7 +443,7 @@ pub async fn serve_rustbook_with_index(
     addr: &std::net::SocketAddr,
     index_html: String,
 ) -> Result<(), anyhow::Error> {
-    let rustdoc_dir = find_rustdoc().expect("Error locating rustdoc");
+    let rustdoc_dir = locate_rustdoc()?;
     let dir = Static::new(rustdoc_dir);
     let index_html = Arc::new(index_html);
     let handler = service_fn(move |req| {
