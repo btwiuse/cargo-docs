@@ -1,10 +1,6 @@
 use bytes::Bytes;
-use cargo::core::compiler::{CompileMode, Executor, UserIntent};
-use cargo::core::{PackageId, Shell, Target, Verbosity, Workspace};
-use cargo::ops::{compile_with_exec, CompileOptions};
-use cargo::util::errors::CargoResult;
+use cargo::core::{Shell, Target, Verbosity, Workspace};
 use cargo::util::{homedir, GlobalContext};
-use cargo_util::ProcessBuilder;
 use http::response::Builder as ResponseBuilder;
 use http::{header, StatusCode};
 use http_body_util::combinators::BoxBody;
@@ -54,28 +50,36 @@ const RELOAD_SCRIPT: &str = r#"<script>
 </script>
 "#;
 
+/// the cargo to re-invoke.
+///
+/// Cargo exports `CARGO` as the path of the binary it is running from before
+/// handing off to a custom subcommand, so honouring it keeps the whole run on
+/// one cargo: the toolchain a `+nightly` or a rustup override selected, and any
+/// wrapper standing in front of it. Resolving the bare name through `PATH`
+/// instead may find a different one, and the two would then disagree about
+/// where artifacts live.
+fn cargo_binary() -> std::ffi::OsString {
+    std::env::var_os("CARGO").unwrap_or_else(|| std::ffi::OsString::from("cargo"))
+}
+
 /// run `cargo doc` with extra args
 #[allow(dead_code)]
 pub async fn run_cargo_doc(args: &Vec<String>) -> std::process::ExitStatus {
-    // std::io::Result<> {
-    // async fn main() ->  {
-    let mut cmd = tokio::process::Command::new("cargo");
+    let mut cmd = tokio::process::Command::new(cargo_binary());
     cmd.arg("doc").args(args);
-    let stdcmd = cmd.as_std();
-    log::info!(
-        "Running {} {}",
-        stdcmd.get_program().to_string_lossy(),
-        stdcmd
-            .get_args()
-            .map(|s| s.to_string_lossy().to_string())
-            .collect::<Vec<String>>()
-            .join(" ")
-    );
-    let mut child = tokio::process::Command::new("cargo")
-        .arg("doc")
-        .args(args)
-        .spawn()
-        .expect("failed to run `cargo doc`");
+    {
+        let stdcmd = cmd.as_std();
+        log::info!(
+            "Running {} {}",
+            stdcmd.get_program().to_string_lossy(),
+            stdcmd
+                .get_args()
+                .map(|s| s.to_string_lossy().to_string())
+                .collect::<Vec<String>>()
+                .join(" ")
+        );
+    }
+    let mut child = cmd.spawn().expect("failed to run `cargo doc`");
     child.wait().await.expect("failed to wait")
 }
 
@@ -109,7 +113,36 @@ pub async fn serve_rust_doc(addr: &std::net::SocketAddr) -> Result<(), anyhow::E
     Ok(serve_rustbook(addr).await?)
 }
 
+/// the crate names `cargo doc` documents for one package, in manifest order.
+///
+/// This mirrors cargo's own default-target filter for doc mode: every
+/// documented target, minus a bin whose crate name a lib in the same package
+/// already claims, since the two would write to one output directory.
+fn documented_crate_names(targets: &[Target]) -> impl Iterator<Item = String> + '_ {
+    targets.iter().filter_map(move |target| {
+        let shadowed_by_lib = target.is_bin()
+            && targets
+                .iter()
+                .any(|other| other.is_lib() && other.crate_name() == target.crate_name());
+
+        (target.documented() && !shadowed_by_lib).then(|| target.crate_name())
+    })
+}
+
 /// get crate info
+///
+/// Both answers come from the manifests alone. An earlier version ran a whole
+/// compile through the linked `cargo` library, with an executor that discarded
+/// every rustc invocation, purely to read the first entry of the resulting
+/// `root_crate_names` -- so it planned a build it never intended to run.
+///
+/// That planning is what made this fail. Building a plan resolves artifact
+/// paths against the build directory layout of the *linked* cargo, while the
+/// `cargo doc` pass runs the *installed* one; when the two disagree about the
+/// layout the plan looks for artifacts that were written elsewhere, and cargo
+/// reports missing extern locations and unexecutable build scripts for a build
+/// that had in fact just succeeded. Reading the workspace instead depends only
+/// on manifest parsing, which no layout change moves.
 #[allow(dead_code)]
 pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyhow::Error> {
     let mut shell = Shell::default();
@@ -119,51 +152,17 @@ pub fn get_crate_info(manifest_path: &PathBuf) -> Result<(String, PathBuf), anyh
     let config = GlobalContext::new(shell, cwd, cargo_home_dir);
     let workspace = Workspace::new(manifest_path, &config).expect("Error making workspace");
 
-    let mut compile_opts = CompileOptions::new(
-        &config,
-        UserIntent::Doc {
-            deps: true,
-            json: false,
-        },
-    )
-    .expect("Making CompileOptions");
-
-    // set to Default, otherwise cargo will complain about virtual manifest:
-    //
-    // https://docs.rs/cargo/latest/src/cargo/core/workspace.rs.html#265-275
-    // https://docs.rs/cargo/latest/src/cargo/ops/cargo_compile.rs.html#125-184
-    compile_opts.spec = cargo::ops::Packages::Default;
-
-    // reference:
-    // https://docs.rs/cargo/latest/src/cargo/ops/cargo_doc.rs.html#18-34
-    /// A `DefaultExecutor` calls rustc without doing anything else. It is Cargo's
-    /// default behaviour.
-    #[derive(Copy, Clone)]
-    struct DefaultExecutor;
-
-    impl Executor for DefaultExecutor {
-        fn exec(
-            &self,
-            _cmd: &ProcessBuilder,
-            _id: PackageId,
-            _target: &Target,
-            _mode: CompileMode,
-            _on_stdout_line: &mut dyn FnMut(&str) -> CargoResult<()>,
-            _on_stderr_line: &mut dyn FnMut(&str) -> CargoResult<()>,
-        ) -> CargoResult<()> {
-            // cmd.exec_with_streaming(on_stdout_line, on_stderr_line, false).map(drop)
-            Ok(())
-        }
-    }
-
-    let exec: Arc<dyn Executor> = Arc::new(DefaultExecutor);
-    let compilation = compile_with_exec(&workspace, &compile_opts, &exec)?;
-    let root_crate_names = &compilation.root_crate_names;
     let crate_doc_dir = workspace.target_dir().join("doc").into_path_unlocked();
-    let crate_name = root_crate_names
-        .get(0)
+
+    // `default_members` is the package set cargo itself selects when no `-p`
+    // was given, and it answers for a virtual manifest as well as a root one.
+    let crate_name = workspace
+        .default_members()
+        .flat_map(|package| documented_crate_names(package.targets()))
+        .next()
         .ok_or_else(|| anyhow::anyhow!("no crates with documentation"))?;
-    Ok((crate_name.to_string(), crate_doc_dir))
+
+    Ok((crate_name, crate_doc_dir))
 }
 
 /// serve crate doc on `addr`
